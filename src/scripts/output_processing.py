@@ -83,8 +83,8 @@ with open(pathlib.Path(ERM_output_jsonpath), 'w', newline='') as f:
 attachments = list()
 attachments.append({"filename": "EpizooticRiskModelInput.csv", "content_type": "text/csv", "role": "downloadable"})
 attachments.append({"filename": "EpizooticRiskModelOutput.csv", "content_type": "text/csv", "role": "downloadable"})
-attachments.append({"filename": "execution_log.log", "content_type": "text/csv", "role": "downloadable"})
-attachments.append({"filename": "info.txt", "content_type": "text/csv", "role": "downloadable"})
+attachments.append({"filename": "execution_log.log", "content_type": "text/plain", "role": "downloadable"})
+attachments.append({"filename": "info.txt", "content_type": "text/plain", "role": "downloadable"})
 attachments.append({"filename": "output.json", "content_type": "application/json", "role": "primary"})
 
 with open(pathlib.Path("/data/attachments.json"), 'w', newline='') as f:
