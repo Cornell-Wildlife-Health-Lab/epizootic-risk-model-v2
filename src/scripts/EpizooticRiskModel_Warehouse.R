@@ -715,7 +715,7 @@ ModelMatrix=SubAdmin_Standard_Load
     	write(line,file=model_log_filepath,append=TRUE)
     	line='Complete Cases'
     	write(line,file=model_log_filepath,append=TRUE)
-	line=paste("This model requires each subadministrative area to have values for all inputs. While you have some data, there does not exist a single subadministrative area that contains all the required fields needed to run this model. Please return to the Warehouse and select a different set of data to analyze.")
+	line=paste("This model requires each sub-administrative area to have values for all inputs. While you have some data, there does not exist a single subadministrative area that contains all the required fields needed to run this model. Please return to the Warehouse and select a different set of data to analyze.")
 	write(line,file=model_log_filepath,append=TRUE) 
 	# Write a blank file back to the Warehouse. 
 	setwd("/data/attachments")
