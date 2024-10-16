@@ -51,7 +51,7 @@ logging.basicConfig(level = logging.DEBUG, # Alternatively, could use DEBUG, INF
 
 model_log("\n-----------------")
 model_log("Model Exports")
-model_log("")
+model_log()
 
 ## Convert the ERM output to a JSON
 ### First read in the data              
@@ -69,7 +69,6 @@ try:
     for each_field in float_fields:
       each_row[each_field] = float(each_row[each_field])
 except Exception as e:
-  # The model cannot be executed without a params file. Exit with an error immediately.
   logging.exception("Failed to convert model output field value to floating point.")
   model_log("ERROR: Failed to create output file.")
   sys.exit(1)
@@ -83,8 +82,8 @@ with open(pathlib.Path(ERM_output_jsonpath), 'w', newline='') as f:
 attachments = list()
 attachments.append({"filename": "EpizooticRiskModelInput.csv", "content_type": "text/csv", "role": "downloadable"})
 attachments.append({"filename": "EpizooticRiskModelOutput.csv", "content_type": "text/csv", "role": "downloadable"})
-attachments.append({"filename": "execution_log.log", "content_type": "text/csv", "role": "downloadable"})
-attachments.append({"filename": "info.txt", "content_type": "text/csv", "role": "downloadable"})
+attachments.append({"filename": "execution_log.log", "content_type": "text/plain", "role": "downloadable"})
+attachments.append({"filename": "info.txt", "content_type": "text/plain", "role": "downloadable"})
 attachments.append({"filename": "output.json", "content_type": "application/json", "role": "primary"})
 
 with open(pathlib.Path("/data/attachments.json"), 'w', newline='') as f:

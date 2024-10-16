@@ -45,6 +45,7 @@ demography_file_paths = [
   "/data/demography_harvest_mortality.json",
   "/data/demography_natural_mortality.json"
   ]
+subadmins_filepath = "/data/sub_administrative_area.ndJson"
 model_metadata_log_file = '/data/attachments/info.txt'
 logging_path = '/data/attachments/execution_log.log'
 
@@ -117,7 +118,9 @@ os.makedirs(os.path.dirname(pathlib.Path(model_metadata_log_file)), exist_ok=Tru
 open(pathlib.Path(model_metadata_log_file), 'w').close()
 model_log("Model: Epizootic Risk Model")
 model_log('Date: ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' GMT')
-
+logging.info("Model: Epizootic Risk Model")
+logging.info('Date: ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' GMT')
+logging.info("This log records data for debugging purposes in the case of a model execution error.")
 
 ######
 # MAIN
@@ -130,10 +133,11 @@ model_log('Date: ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' G
 try:
   with open(pathlib.Path(parameters_file), 'r') as f:
     params = json.load(f)
+    logging.info("params.json file loaded successfully")
 except:
   # The model cannot be executed without a params file. Exit with an error immediately.
   logging.error("params.json File does not exist.")
-  model_log("ERROR: Parameters (params.json) file not found.")
+  model_log("ERROR: Parameters (params.json) file not found. Execution halted.")
   sys.exit(1)
   
 # Get provider admin area
@@ -145,7 +149,7 @@ del(params['_provider'])
 if 'season_year' in params:
   params['season_year'] = ', '.join(params['season_year'])
 
-# adding and editing params to fit revised model
+### Adding and editing params to fit revised model
 ### Section can be removed after corresponding Warehouse UI and data processing updates.
 if 'omega' not in params:
   params['omega'] = 4
@@ -159,7 +163,7 @@ if 'transmission_via_exposed_deer' in params:
   rename_key(params, 'transmission_via_exposed_deer', 'transmission_via_subclinical_deer')
 if 'transmission_via_infectious_deer' in params:
   rename_key(params, 'transmission_via_infectious_deer', 'transmission_via_clinical_deer')
-#Rename for file references
+# Rename for file references
 if "_demography_deer_density" in params:
   rename_key(params, '_demography_deer_density', 'demography_density_id')
 if "_demography_density" in params:
@@ -193,78 +197,66 @@ model_log(json_stringify(params))
 # Process Samples
 # Required
 
-# Check if sample.ndjson exists; if not ERROR out
-if pathlib.Path(sample_file_path).exists():
-  print("sample.json file exists.")
-  # Open the source, get ndjson data, and load as a list of dictionaries
-  with open(sample_file_path, 'r') as f:
-    sample_data = ndjson.load(f)
-  
-  # Log number of samples
-  model_log()
-  model_log('-------------------')
-  model_log("Warehouse data provided to model:")
-  model_log("Samples: " + str(len(sample_data)))
-    
-  for sample_record in sample_data:
-
-    ## For each sample, get the definitive test result
-    
-    # Create a list of tests that are flagged as selected_definitive (should have length 0 or 1)
-    tests_selected_definitive = [test for test in sample_record["tests"] if test["selected_definitive"] == True]
-    
-    if len(tests_selected_definitive) == 0: # no match means no tests so set to None
-      sample_record["result"] = None
-    elif len(tests_selected_definitive) > 1: # more than one match - problem
-      # This would be a problem and should never happen, though we could write error handling
-      pass
-    elif len(tests_selected_definitive) == 1: # one match so use that test
-      # result is a required field; but check if has value. If so, use it, else set to None
-      sample_record["result"] = tests_selected_definitive[0]["result"] if "result" in tests_selected_definitive[0] else None
-    
-    # Get sub-admin area for each sample
-    # 
-    # If the sample has no sub-administrative area or if the sub-administrative
-    # area has no id, then return None. 
-    if '_sub_administrative_area' in sample_record:
-      if '_id' in sample_record['_sub_administrative_area']:
-        sample_record["sub_administrative_area_id"] = sample_record['_sub_administrative_area']['_id']
-      else:sample_record["sub_administrative_area_id"] = None
-    else:sample_record["sub_administrative_area_id"] = None
-    
-    # Rename _id field
-    if '_id' in sample_record:
-      rename_key(sample_record, '_id', 'id')
-    
-  # Write to a CSV
-  with open(pathlib.Path("/data/sample.csv"), 'w', newline='') as f:
-    writer = csv.DictWriter(
-      f, 
-      quoting=csv.QUOTE_NONNUMERIC,
-      fieldnames=["id", "result", "sub_administrative_area_id"], 
-      extrasaction='ignore')
-    writer.writeheader()
-    writer.writerows(sample_data)
-
-else: # required sample.ndjson doesn't exist
-  print("No Samples (sample.ndjson) file to process. This file is required")
-  # Error
-# Get model parameters file
 try:
-  with open(pathlib.Path(parameters_file), 'r') as f:
-    params = json.load(f)
+  with open(pathlib.Path(sample_file_path), 'r') as f:
+    sample_data = ndjson.load(f)
+    logging.info("samples ndjson loaded successfully")
+
 except:
-  # The model cannot be executed without a params file. Exit with an error immediately.
-  logging.error("params.json File does not exist.")
-  model_log("ERROR: Parameters (params.json) file not found.")
+  logging.error("samples.ndjson file does not exist.")
+  model_log("ERROR: Samples (sample.ndjson) file not found. Sample data are required to run this model. Execution halted.")
   sys.exit(1)
 
+# Log number of samples
+model_log()
+model_log('-------------------')
+model_log("Warehouse data provided to model:")
+model_log("Samples: " + str(len(sample_data)))
+
+for sample_record in sample_data:
+
+  ## For each sample, get the definitive test result
+  
+  # Create a list of tests that are flagged as selected_definitive (should have length 0 or 1)
+  tests_selected_definitive = [test for test in sample_record["tests"] if test["selected_definitive"] == True]
+  
+  if len(tests_selected_definitive) == 0: # no match means no tests so set to None
+    sample_record["result"] = None
+  elif len(tests_selected_definitive) > 1: # more than one match - problem
+    # This would be a problem and should never happen, though we could write error handling
+    pass
+  elif len(tests_selected_definitive) == 1: # one match so use that test
+    # result is a required field; but check if has value. If so, use it, else set to None
+    sample_record["result"] = tests_selected_definitive[0]["result"] if "result" in tests_selected_definitive[0] else None
+  
+  # Get sub-admin area for each sample
+  # 
+  # If the sample has no sub-administrative area or if the sub-administrative
+  # area has no id, then return None. 
+  if '_sub_administrative_area' in sample_record:
+    if '_id' in sample_record['_sub_administrative_area']:
+      sample_record["sub_administrative_area_id"] = sample_record['_sub_administrative_area']['_id']
+    else:sample_record["sub_administrative_area_id"] = None
+  else:sample_record["sub_administrative_area_id"] = None
+  
+  # Rename _id field
+  if '_id' in sample_record:
+    rename_key(sample_record, '_id', 'id')
+  
+# Write to a CSV
+with open(pathlib.Path("/data/sample.csv"), 'w', newline='') as f:
+  writer = csv.DictWriter(
+    f, 
+    quoting=csv.QUOTE_NONNUMERIC,
+    fieldnames=["id", "result", "sub_administrative_area_id"], 
+    extrasaction='ignore')
+  writer.writeheader()
+  writer.writerows(sample_data)
 
 ##################################
 # Process Sub-administrative areas
 # Required
 
-subadmins_filepath = "/data/sub_administrative_area.ndJson"
 subadmins = list()
 try:
   with open(pathlib.Path(subadmins_filepath), 'r') as f:
@@ -272,7 +264,7 @@ try:
 except:
   # The model cannot be executed without a sub_administrative areas file. Exit with an error immediately.
   logging.error("sub_administrative_area.json File does not exist.")
-  model_log("ERROR: Sub-administrative areas (sub_administrative_area.json) file not found.")
+  model_log("ERROR: Sub-administrative areas (sub_administrative_area.json) file not found. Execution halted.")
   sys.exit(1)
 
 for subadmin in subadmins:
@@ -326,11 +318,15 @@ with open(pathlib.Path("/data/sub_administrative_area.csv"), 'w', newline='') as
 
 model_log("Demographic data:")
 
+demography_file_provided = False # Set a dummy variable to false. 
+                                 # Change to true (below) if at least one exists.
+                                 # If still False after checking for any demography files, 
+                                 # write to model_log that none were provided.
+
 for demographic_file_path in demography_file_paths:
   # Check if file exists
   if pathlib.Path(demographic_file_path).exists():
-    print(demographic_file_path + " file exists.")
-    
+    demography_file_provided = True
     # Open the source ndjson file and load as a list of dictionaries
     with open(demographic_file_path, 'r') as f:
       demographic_data = json.load(f)
@@ -342,13 +338,12 @@ for demographic_file_path in demography_file_paths:
     list_demographic_data = [{"sub_administrative_area_id": key, "value": value} for key, value in demographic_data['data'].items()]
     
     demographic_file_name = pathlib.Path(demographic_file_path).stem
-    # TEMP for transition to new version
+    # TEMP for transition to new model version
     if demographic_file_name == 'demography_deer_density':
       demographic_file_name = 'demography_density'
-      
     # END TEMP
     
-    logging.info("Demography file name " + demographic_file_name)
+    logging.info("Demography file: " + demographic_file_name)
     
     # Write the demographic data to a file
     filepath = pathlib.Path("/data", demographic_file_name + ".csv")
@@ -363,3 +358,6 @@ for demographic_file_path in demography_file_paths:
   else:
     # Demography files are not required. If one doesn't exist, go to the next.
     pass
+
+if demography_file_provided == False:
+  model_log("   None provided")
