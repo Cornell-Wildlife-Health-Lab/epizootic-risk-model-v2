@@ -58,16 +58,45 @@ model_log()
 ERM_output_csv = '/data/attachments/EpizooticRiskModelOutput.csv'
 ERM_output_dictlist = list()
 with open(pathlib.Path(ERM_output_csv), 'r') as f:
-  csvrdr = csv.DictReader(f, quoting = csv.QUOTE_NONNUMERIC)
+  csvrdr = csv.DictReader(f)#, quoting = csv.QUOTE_NONNUMERIC)
   ERM_output_dictlist = list(csvrdr)
 
 # Data read via csv.DictReader reads all fields as text.
 # Convert fields that are numbers from strings to numbers.
-float_fields = ("PopulationGrowthRate","EpizooticPotential","EpizooticPotentialRank","E_N","E_f","E_muS","E_muL","E_muEd","E_muEw","E_muId","E_muIw","E_gammaE","E_gammaI","E_sigma","E_omega","E_epsilon","E_alpha","E_thetaE","E_thetaI","E_phiE","E_phiI","E_phiX","E_eta","E_q")
+float_fields = ("PopulationGrowthRate",
+                "EpizooticPotential",
+                "EpizooticPotentialRank",
+                "E_N",
+                "E_f",
+                "E_muS",
+                "E_muL",
+                "E_muEd",
+                "E_muEw",
+                "E_muId",
+                "E_muIw",
+                "E_gammaE",
+                "E_gammaI",
+                "E_sigma",
+                "E_omega",
+                "E_epsilon",
+                "E_alpha",
+                "E_thetaE",
+                "E_thetaI",
+                "E_phiE",
+                "E_phiI",
+                "E_phiX",
+                "E_eta",
+                "E_q")
+
 try:
   for each_row in ERM_output_dictlist:
     for each_field in float_fields:
-      each_row[each_field] = float(each_row[each_field])
+      try:
+        each_row[each_field] = float(each_row[each_field])
+      except ValueError:
+        # Handle text or invalid values gracefully
+        each_row[each_field] = None
+      
 except Exception as e:
   logging.exception("Failed to convert model output field value to floating point.")
   model_log("ERROR: Failed to create output file.")
