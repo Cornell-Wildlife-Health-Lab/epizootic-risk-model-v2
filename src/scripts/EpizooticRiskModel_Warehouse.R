@@ -722,7 +722,7 @@ ModelMatrix=SubAdmin_Standard_Load
 	NULLS=as.data.frame(matrix(rep(NA,ModelMatrixDim*26),ModelMatrixDim,26,byrow=TRUE))
 	colnames(NULLS)=c("SubAdminID","SubAdminName","PopulationGrowthRate","EpizooticPotential","EpizooticPotentialRank","E_N",
 	               "E_f","E_muS","E_muL","E_muEd","E_muEw","E_muId","E_muIw","E_gammaE",
-	               "E_gammaI","E_sigma","E_omega","E_epsilon","E_alpha","E_thetaE","E_thetaI","E_phiE","E_phiI","E_phiX","E_eta,E_q")
+	               "E_gammaI","E_sigma","E_omega","E_epsilon","E_alpha","E_thetaE","E_thetaI","E_phiE","E_phiI","E_phiX","E_eta","E_q")
 	write.csv(NULLS, "EpizooticRiskModelOutput.csv", row.names = FALSE)
 	} # End if subadmin areas not removed. 
 
