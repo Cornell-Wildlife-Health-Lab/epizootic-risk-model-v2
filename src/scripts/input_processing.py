@@ -105,10 +105,15 @@ def rename_key(dict_, old_key, new_key):
 os.makedirs(os.path.dirname(pathlib.Path(logging_path)), exist_ok=True)
 
 logging.basicConfig(level = logging.DEBUG, # Alternatively, could use DEBUG, INFO, WARNING, ERROR, CRITICAL
-                    filename = '/data/attachments/execution_log.log', 
+                    filename = logging_path, 
                     filemode = 'w', # a is append, w is overbite
                     datefmt = '%Y-%m-%d %H:%M:%S',
                     format = '%(asctime)s - %(levelname)s - %(message)s')
+
+# Uncaught exception handler
+def handle_uncaught_exception(type, value, traceback):
+  logging.error(f"{type} error has occurred with value: {value}. Traceback: {traceback}")
+sys.excepthook = handle_uncaught_exception
 
 ## Initiate model metadata log
 
@@ -133,7 +138,7 @@ logging.info("This log records data for debugging purposes in the case of a mode
 try:
   with open(pathlib.Path(parameters_file), 'r') as f:
     params = json.load(f)
-    logging.info("params.json file loaded successfully")
+    logging.info("Parameters json file loaded successfully")
 except:
   # The model cannot be executed without a params file. Exit with an error immediately.
   logging.error("params.json File does not exist.")
@@ -233,8 +238,8 @@ for sample_record in sample_data:
   # 
   # If the sample has no sub-administrative area or if the sub-administrative
   # area has no id, then return None. 
-  if '_sub_administrative_area' in sample_record:
-    if '_id' in sample_record['_sub_administrative_area']:
+  if '_sub_administrative_area' in sample_record and sample_record['_sub_administrative_area'] is not None:
+    if '_id' in sample_record['_sub_administrative_area'] and sample_record['_sub_administrative_area']['_id'] is not None:
       sample_record["sub_administrative_area_id"] = sample_record['_sub_administrative_area']['_id']
     else:sample_record["sub_administrative_area_id"] = None
   else:sample_record["sub_administrative_area_id"] = None
@@ -272,19 +277,18 @@ for subadmin in subadmins:
   if '_id' in subadmin:
     rename_key(subadmin, '_id', 'id')
   # For each subadmin area, convert list of adjacent admin areas to a single string
-  if '_adjacent' in subadmin:
-    if subadmin['_adjacent'] != None:
-      subadmin['adjacent_id'] = ', '.join(subadmin['_adjacent'])
-  # for each subadmin area, convert lis of adjacent admin areas into strings
+  if '_adjacent' in subadmin and subadmin['_adjacent'] is not None:
+    subadmin['adjacent_id'] = ', '.join(subadmin['_adjacent'])
+  else: subadmin['adjacent_id'] = None
+  # for each subadmin area, convert list of adjacent admin areas into strings
   subadmin['adjacent_administrative_area_id'] = list() # Add a list to hold adjacent admin IDs
   subadmin['adjacent_administrative_area_short_name'] = list() # Add a list to hold adjacent admin IDs
   adj_admin_area_ids = list()
   adj_admin_area_short_names = list()
-  if '_adjacent_administrative_area' in subadmin:
-    if subadmin['_adjacent_administrative_area'] != None:
-      for each in subadmin['_adjacent_administrative_area']:
-        adj_admin_area_ids.append(each["_id"])  
-        adj_admin_area_short_names.append(each["administrative_area"])
+  if '_adjacent_administrative_area' in subadmin and subadmin['_adjacent_administrative_area'] is not None:
+    for each in subadmin['_adjacent_administrative_area']:
+      adj_admin_area_ids.append(each["_id"])  
+      adj_admin_area_short_names.append(each["administrative_area"])
   subadmin['adjacent_administrative_area_id'] = ', '.join(adj_admin_area_ids)
   subadmin['adjacent_administrative_area_short_name'] = ', '.join(adj_admin_area_short_names)
   subadmin['administrative_area_id'] = subadmin["_administrative_area"]["_id"]
@@ -343,7 +347,7 @@ for demographic_file_path in demography_file_paths:
       demographic_file_name = 'demography_density'
     # END TEMP
     
-    logging.info("Demography file: " + demographic_file_name)
+    logging.info(f"Demography file {demographic_file_name} loaded successfully")
     
     # Write the demographic data to a file
     filepath = pathlib.Path("/data", demographic_file_name + ".csv")
