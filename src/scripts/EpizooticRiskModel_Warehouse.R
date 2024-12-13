@@ -595,11 +595,12 @@ ModelMatrix=SubAdmin_Standard_Load
   ratio_d=d_numerator/d_denominator
   # Add all four terms.
   EpizooticPotential=ratio_a+ratio_b+ratio_c+ratio_d
+  # Round to three digits.
+  EpizooticPotential_round=round(EpizooticPotential,digits=3)
   # Append EpizooticPotential onto Output Matrix.
-  OutputMatrix=cbind(OutputMatrix,EpizooticPotential)
+  OutputMatrix=cbind(OutputMatrix,EpizooticPotential_round)
   
-  # Round and Rank Epizootic Potential. 
-  EpizooticPotential_round = round(EpizooticPotential,digits=3)
+  # Rank Epizootic Potential. 
   EpizooticPotentialRank=rank(-EpizooticPotential_round,ties.method="min")
   
   # Append EpizooticPotential onto Output Matrix.
