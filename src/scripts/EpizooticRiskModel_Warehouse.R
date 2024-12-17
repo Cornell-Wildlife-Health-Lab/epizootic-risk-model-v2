@@ -560,7 +560,6 @@ ModelMatrix=SubAdmin_Standard_Load
       SubAdminID = ModelMatrixComplete$SubAdminID,
       SubAdminName = ModelMatrixComplete$SubAdminName)
   )
-      # cbind(ModelMatrixComplete$SubAdminID,ModelMatrixComplete$SubAdminName))
   
   # Calculate the Population Growth Rate. 
   # Initialize empty vector to store calculations.
