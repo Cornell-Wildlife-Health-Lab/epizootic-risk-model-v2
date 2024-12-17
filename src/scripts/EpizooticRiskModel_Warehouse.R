@@ -556,7 +556,11 @@ ModelMatrix=SubAdmin_Standard_Load
   MUI=MUIW+MUID
   
   # Initialize OutputMatrix. 
-  OutputMatrix=as.data.frame(cbind(ModelMatrixComplete$SubAdminID,ModelMatrixComplete$SubAdminName))
+  OutputMatrix=as.data.frame(cbind(
+      SubAdminID = ModelMatrixComplete$SubAdminID,
+      SubAdminName = ModelMatrixComplete$SubAdminName)
+  )
+      # cbind(ModelMatrixComplete$SubAdminID,ModelMatrixComplete$SubAdminName))
   
   # Calculate the Population Growth Rate. 
   # Initialize empty vector to store calculations.
