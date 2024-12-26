@@ -103,7 +103,7 @@ except Exception as e:
   sys.exit(1)
 
 # Write to JSON file
-ERM_output_jsonpath = "/data/attachments/output.json"
+ERM_output_jsonpath = pathlib.Path("", "data", "attachments", "output.json")
 with open(pathlib.Path(ERM_output_jsonpath), 'w', newline='') as f:
     writer = json.dump(ERM_output_dictlist, f)
     
@@ -111,8 +111,6 @@ with open(pathlib.Path(ERM_output_jsonpath), 'w', newline='') as f:
 attachments = list()
 attachments.append({"filename": "EpizooticRiskModelInput.csv", "content_type": "text/csv", "role": "downloadable"})
 attachments.append({"filename": "EpizooticRiskModelOutput.csv", "content_type": "text/csv", "role": "downloadable"})
-attachments.append({"filename": "execution_log.log", "content_type": "text/plain", "role": "downloadable"})
-attachments.append({"filename": "info.txt", "content_type": "text/plain", "role": "downloadable"})
 attachments.append({"filename": "output.json", "content_type": "application/json", "role": "primary"})
 
 with open(pathlib.Path("/data/attachments.json"), 'w', newline='') as f:

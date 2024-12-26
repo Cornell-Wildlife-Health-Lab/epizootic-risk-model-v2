@@ -118,7 +118,7 @@
           line="We're sorry. The data does not contain at least one record with a known sub adminstrative area, which is a requirement of this model. Please go back to the Warehouse and select a different set of samples to analyze."
           write(line,file=model_log_filepath,append=TRUE) 
           # Kill the code.  
-          quit("yes")
+          quit(status = 70)
           } # End if all samples were removed.
         
 # At this point in the code, there has to be data in 'sample_clean' 
