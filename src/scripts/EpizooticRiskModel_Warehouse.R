@@ -22,9 +22,55 @@
 # Platform: x86_64-w64-mingw32/x64
 #
 # ______________________________________________________________________________
+# Load packages.
+library(tidyverse) # Version 4.4.0
 
-# Load packages. 
-    library(tidyverse) # Version 4.4.0
+# Reusable Functions
+
+add_item_to_json_array <- function(file_path, new_item) {
+    # Adds a string representing a JavaScript Object
+    # to a JSON file containing an array. The existence of
+    # the file and a list in that file is assumed.
+
+    # Check if the file exists
+    if (!file.exists(file_path)) {
+        stop(paste0("Error: File '", file_path, "' not found."))
+    }
+
+    # Read the file content
+    file_content <- readChar(file_path, file.info(file_path)$size)
+
+    # Check if the file is empty
+    if (nchar(file_content) == 0) {
+        stop("Error: The JSON file is empty.")
+    }
+
+    # Remove the last closing bracket
+    file_content <- substr(file_content, 1, nchar(file_content) - 1)
+
+    # Create a function for adding double quotes around text
+    double_quote <- function(x) {
+        paste0('"', x, '"')
+    }
+
+    # Create the new item as a JSON string using shQuote with double_quote
+    new_item_json <- paste0(
+        "{",
+        paste(
+            sapply(names(new_item), double_quote),
+            sapply(as.character(new_item), double_quote),
+            sep = ":", collapse = ","
+        ),
+        "}"
+    )
+
+    # Add comma, new item, and closing bracket to the file content
+    file_content <- paste0(file_content, ",", new_item_json, "]")
+
+    # Write the updated data back to the file
+    writeLines(file_content, file_path, sep = "")
+}
+
 
 # Info about Required Data. 
 
@@ -34,11 +80,10 @@
   # 3. A .csv file with the animals sampled that match the user inputs.
 
 # Model log file started with Python data processing script. 
-    model_log_filepath=file.path("", "data", "attachments", "info.txt")
+    model_log_filepath=file.path("", "data", "attachments", "info.html")
 
 # Continue the log started with the Python script. 
-    write("\n-------------------",file=model_log_filepath,append=TRUE)
-    line = 'Model Execution'
+    line = '<h3>Model Execution</h3>'
     write(line,file=model_log_filepath,append=TRUE)
 
 # Read in the (Required) Parameters file. 
@@ -73,7 +118,13 @@
     # Append the Area to the SubAdmin_Standard to create 
     # the 'standard' area data frame.
     SubAdmin_Standard_Area=as.data.frame(cbind(SubAdmin_Standard,Area))
-      
+
+    # Import and Format the Demographic Data. 
+    
+    # Create a new header in the model log.
+    line='<h4>Sample Data</h4>'
+    write(line,file=model_log_filepath,append=TRUE)
+
     # Sample file. 
     # Make sure sample is data frame. 
     sample_df=as.data.frame(sample)
@@ -93,20 +144,20 @@
                         # If all samples were retained.
                         if(CleanDim==OrigDim){
                         # Print a message stating that all samples have known subadmin.
-                        line="All samples belong to a known sub administration area and therefore the model can use every record."
+                        line="<p>All samples belong to a known sub administration area and therefore the model can use every record.</p>"
                         write(line,file=model_log_filepath,append=TRUE)
                         } # End if all samples had known subadmin.
                     
                         # If some samples were we retained. 
                         if(CleanDim!=OrigDim){
                         # Print a message saying how many samples you started with.
-                        line=paste("The sample data set started with", OrigDim, "samples.")
+                        line=paste("<p>The sample data set started with", OrigDim, "samples.<br>")
                         write(line,file=model_log_filepath,append=TRUE)
                         # Print a message saying how many samples were removed.
-                        line=paste("However,", OrigDim-CleanDim, "samples were removed due to missing sub administration area.")
+                        line=paste("However,", OrigDim-CleanDim, "samples were removed due to missing sub administration area.<br>")
                         write(line,file=model_log_filepath,append=TRUE)                          
                         # Print a message saying how many samples are remaining in model. 
-                        line=paste("Thus, the model will now use the", CleanDim, "complete samples.")
+                        line=paste("Thus, the model will now use the", CleanDim, "complete samples.</p>")
                         write(line,file=model_log_filepath,append=TRUE)                          
                         } # End if some samples were removed.
                     
@@ -115,7 +166,7 @@
           # If all samples were removed during cleaning.
           if (CleanDim==0){
           # Print error message to log file.
-          line="We're sorry. The data does not contain at least one record with a known sub adminstrative area, which is a requirement of this model. Please go back to the Warehouse and select a different set of samples to analyze."
+          line="<p>We're sorry. The data does not contain at least one record with a known sub adminstrative area, which is a requirement of this model. Please go back to the Warehouse and select a different set of samples to analyze.</p>"
           write(line,file=model_log_filepath,append=TRUE) 
           # Kill the code.  
           quit(status = 70)
@@ -152,16 +203,14 @@
           # Bind the load vector to the list of all subadmin.
           SubAdmin_Standard_Load=cbind(SubAdmin_Standard_Area,Load)
           # Print a message that there were no positive samples.
-          line="No positive CWD tests were reported in this data set, so the environmental contamination value has been set to zero for all sub administrative areas."
+          line="<p>No positive CWD tests were reported in this data set, so the environmental contamination value has been set to zero for all sub administrative areas.</p>"
           write(line,file=model_log_filepath,append=TRUE)                               
           } # End if no positive tests.
             
 # Import and Format the Demographic Data. 
     
     # Create a new header in the model log.
-    line=''
-    write(line,file=model_log_filepath,append=TRUE)
-    line='Demographic Data'
+    line='<h4>Demographic Data</h4>'
     write(line,file=model_log_filepath,append=TRUE)
     
   # There are four additional files that will only be read in IF the user opts to  
@@ -188,14 +237,14 @@
       # If Fecundity data does not exist. 
       if(is.null(Fecundity_import)){
       # Print message to log file.
-      line="Fecundity data does not exist. The model will use user-input values instead."
+      line="<p>Fecundity data does not exist. The model will use user-input values instead.</p>"
       write(line,file=model_log_filepath,append=TRUE) 
       } # End if Fecundity data does not exist.
     
       # If Fecundity data exists.
       if(!is.null(Fecundity_import)){
       # Print success message to log file.
-      line="Fecundity data loaded."
+      line="<p>Fecundity data loaded.</p>"
       write(line,file=model_log_filepath,append=TRUE) 
       # Convert the list to a data frame where each row represents a subadmin.
       Fecundity_df=as.data.frame(Fecundity_import)
@@ -209,14 +258,14 @@
       # If Harvest data does not exist. 
       if(is.null(Harvest_import)){
       # Print message to log file.
-      line="Harvest data does not exist. The model will use user-input values instead."
+      line="<p>Harvest data does not exist. The model will use user-input values instead.</p>"
       write(line,file=model_log_filepath,append=TRUE) 
       } # End if Harvest data does not exist.
     
       # If Harvest data exists. 
       if(!is.null(Harvest_import)){
       # Print success message to log file.
-      line="Harvest data loaded."
+      line="<p>Harvest data loaded.</p>"
       write(line,file=model_log_filepath,append=TRUE) 
       # Convert the list to a data frame where each row represents a subadmin.
       Harvest_df=as.data.frame(Harvest_import)
@@ -230,14 +279,14 @@
       # If natural Mortality data does not exist.
       if(is.null(Mortality_import)){
       # Print message to log file.
-      line="Natural Mortality data does not exist. The model will use user-input values instead."
+      line="<p>Natural Mortality data does not exist. The model will use user-input values instead.</p>"
       write(line,file=model_log_filepath,append=TRUE) 
       } # End if natural Mortality data does not exist.
     
       # If natural Mortality data exists.
       if(!is.null(Mortality_import)){
       # Print success message to log file.
-      line="Natural Mortality data loaded."
+      line="<p>Natural Mortality data loaded.</p>"
       write(line,file=model_log_filepath,append=TRUE) 
       # Convert the list to a data frame where each row represents a subadmin.
       Mortality_df=as.data.frame(Mortality_import)
@@ -251,14 +300,14 @@
       # If Density data does not exist.
       if(is.null(Density_import)){
       # Print message to log file.
-      line="Density data does not exist. The model will use user-input values instead."
+      line="<p>Density data does not exist. The model will use user-input values instead.</p>"
       write(line,file=model_log_filepath,append=TRUE) 
       } # End if Density data does not exist.
     
       # If Density data exists.
       if(!is.null(Density_import)){
       # Print success message to log file.
-      line="Density data loaded."
+      line="<p>Density data loaded.</p>"
       write(line,file=model_log_filepath,append=TRUE)           
       # Convert the list to a data frame where each row represents a subadmin.
       Density_df=as.data.frame(Density_import)
@@ -357,10 +406,8 @@ ModelMatrix=SubAdmin_Standard_Load
       rm(Density)
       } # End if Density data does not exist.
 
-# Create a new header in the model log.
-    line=''
-    write(line,file=model_log_filepath,append=TRUE)
-    line='Epidemiological Data'
+    # Create a new header in the model log.
+    line='<h4>Epidemiological Data</h4>'
     write(line,file=model_log_filepath,append=TRUE)  
   
 # Add epidemiological data to the model matrix. 
@@ -371,7 +418,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,gammaE)
       rm(gammaE)
       # Log the message.
-      line='Data depicting transmission between subclinical hosts and new hosts does not exist. The model will use user-input values instead.'
+      line='<p>Data depicting transmission between subclinical hosts and new hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
 
 # GammaI.
@@ -381,7 +428,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,gammaI)
       rm(gammaI)
       # Log the message.
-      line='Data depicting transmission between clinical hosts and new hosts does not exist. The model will use user-input values instead.'
+      line='<p>Data depicting transmission between clinical hosts and new hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # Sigma.    
@@ -391,7 +438,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,sigma)
       rm(sigma)
       # Log the message.
-      line='Data depicting transmission between the environment and new hosts does not exist. The model will use user-input values instead.'
+      line='<p>Data depicting transmission between the environment and new hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE)   
       
 # Omega.   
@@ -401,7 +448,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,omega)
       rm(omega)
       # Log the message.
-      line='Data on disease progression from disease-free hosts to subclinical hosts does not exist. The model will use user-input values instead.'
+      line='<p>Data on disease progression from disease-free hosts to subclinical hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # Epsilon.    
@@ -411,7 +458,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,epsilon)
       rm(epsilon)
       # Log the message.
-      line='Data on disease progression from subclinical to clinical hosts does not exist. The model will use user-input values instead.'
+      line='<p>Data on disease progression from subclinical to clinical hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # Alpha.
@@ -421,7 +468,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,alpha)
       rm(alpha)
       # Log the message.
-      line='Data on disease progression from clinical host to CWD mortality hosts does not exist. The model will use user-input values instead.'
+      line='<p>Data on disease progression from clinical host to CWD mortality hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # q.   
@@ -431,7 +478,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,q)
       rm(q)
       # Log the message.
-      line='Data on transmission (contact) type does not exist. The model will use user-input values instead.'
+      line='<p>Data on transmission (contact) type does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # Eta.   
@@ -441,7 +488,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,eta)
       rm(eta)
       # Log the message.
-      line='Data on the rate of prion removal from the environment does not exist. The model will use user-input values instead.'
+      line='<p>Data on the rate of prion removal from the environment does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # PhiE.  
@@ -451,7 +498,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,phiE)
       rm(phiE)
       # Log the message.
-      line='Data on the prion deposition rate of subclinical carcasses does not exist. The model will use user-input values instead.'
+      line='<p>Data on the prion deposition rate of subclinical carcasses does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # PhiI.    
@@ -461,7 +508,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,phiI)
       rm(phiI)
       # Log the message.
-      line='Data on the prion deposition rate of clinical carcasses does not exist. The model will use user-input values instead.'
+      line='<p>Data on the prion deposition rate of clinical carcasses does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # PhiX.   
@@ -471,7 +518,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,phiX)
       rm(phiX)
       # Log the message.
-      line='Data on the prion deposition rates of hosts that died from CWD does not exist. The model will use user-input values instead.'
+      line='<p>Data on the prion deposition rates of hosts that died from CWD does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # ThetaE.
@@ -481,7 +528,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,thetaE)
       rm(thetaE)
       # Log the message.
-      line='Data on the shedding rate of subclinical hosts does not exist. The model will use user-input values instead.'
+      line='<p>Data on the shedding rate of subclinical hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # ThetaI.
@@ -491,7 +538,7 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,thetaI)
       rm(thetaI)
       # Log the message.
-      line='Data on the shedding rate of clinical hosts does not exist. The model will use user-input values instead.'
+      line='<p>Data on the shedding rate of clinical hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
 
 # Notes at this point in the script: .
@@ -501,7 +548,16 @@ ModelMatrix=SubAdmin_Standard_Load
 # Print the Model Matrix.
       setwd("/data/attachments")
       # Write the Model Matrix to the attachments working directory.
-      write.csv(ModelMatrix, "EpizooticRiskModelInput.csv", row.names = FALSE)  
+      write.csv(ModelMatrix, "EpizooticRiskModelInput.csv", row.names = FALSE)
+      # Modify the attachments.json file to include the Model Matrix
+      setwd("/data")
+      # Define the new item
+      attachment_item <- list(
+            filename = "EpizooticRiskModelInput.csv", 
+            content_type = "text/csv", 
+            role = "downloadable"
+            )
+      add_item_to_json_array("attachments.json", attachment_item)
 
 # Ensure that the ModelMatrix does not have lurking NAs from randomly missing data
 # within a vector somewhere. 
@@ -512,12 +568,10 @@ ModelMatrix=SubAdmin_Standard_Load
 	# If a subadmin area was removed due to NA, then tell the user. 
 	if (ModelMatrixCompleteDim>0 | ModelMatrixCompleteDim==ModelMatrixDim){
 	# Tell the user how many areas were removed. 
-    	line=''
-    	write(line,file=model_log_filepath,append=TRUE)
-    	line='Complete Cases'
+    	line='<h4>Complete Cases</h4>'
     	write(line,file=model_log_filepath,append=TRUE)
 	Diff=ModelMatrixDim-ModelMatrixCompleteDim
-	line=paste("This model requires each subadministrative area to have values for all inputs.", Diff," subadministrative areas were removed from this analysis due to missing data within one ore more required fields.")
+	line=paste("<p>This model requires each sub-administrative area to have values for all inputs.", Diff," sub-administrative areas were removed from this analysis due to missing data within one ore more required fields.</p>")
   	write(line,file=model_log_filepath,append=TRUE) 
   
   # Note. At this point in the code, the files exist and data exists in the files. Otherwise the code will have been terminated. 
@@ -709,17 +763,26 @@ ModelMatrix=SubAdmin_Standard_Load
   # Write the Output Matrix to the attachments working directory.
   setwd("/data/attachments")
   write.csv(OutputMatrix, "EpizooticRiskModelOutput.csv",  row.names = FALSE)
+  # Modify the attachments.json file to include the Model Matrix
+  setwd("/data")
+  # Define the new item
+  attachment_item <- list(
+      filename = "EpizooticRiskModelOutput.csv", 
+      content_type = "text/csv", 
+      role = "downloadable"
+      )
+  add_item_to_json_array("attachments.json", attachment_item)
   
+
+
 	} # End if subadmin area removed. 
 
 	# If all the subadmin areas are removed.
 	if (ModelMatrixCompleteDim==0){
 	# Tell the user that insufficient data exists. 
-    	line=''
+    	line='<h4>Complete Cases</h4>'
     	write(line,file=model_log_filepath,append=TRUE)
-    	line='Complete Cases'
-    	write(line,file=model_log_filepath,append=TRUE)
-	line=paste("This model requires each sub-administrative area to have values for all inputs. While you have some data, there does not exist a single subadministrative area that contains all the required fields needed to run this model. Please return to the Warehouse and select a different set of data to analyze.")
+	line=paste("<p>This model requires each sub-administrative area to have values for all inputs. While you have some data, there does not exist a single sub-administrative area that contains all the required fields needed to run this model. Please return to the Warehouse and select a different set of data to analyze.</p>")
 	write(line,file=model_log_filepath,append=TRUE) 
 	# Write a blank file back to the Warehouse. 
 	setwd("/data/attachments")
@@ -728,6 +791,15 @@ ModelMatrix=SubAdmin_Standard_Load
 	               "E_f","E_muS","E_muL","E_muEd","E_muEw","E_muId","E_muIw","E_gammaE",
 	               "E_gammaI","E_sigma","E_omega","E_epsilon","E_alpha","E_thetaE","E_thetaI","E_phiE","E_phiI","E_phiX","E_eta","E_q")
 	write.csv(NULLS, "EpizooticRiskModelOutput.csv", row.names = FALSE)
+        # Modify the attachments.json file to include the Model Matrix
+      setwd("/data")
+      # Define the new item
+      attachment_item <- list(
+            filename = "EpizooticRiskModelOutput.csv", 
+            content_type = "text/csv", 
+            role = "downloadable"
+            )
+      add_item_to_json_array("attachments.json", attachment_item)
 	} # End if subadmin areas not removed. 
 
 

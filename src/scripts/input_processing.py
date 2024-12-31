@@ -48,6 +48,7 @@ demography_file_paths = [
 subadmins_filepath = "/data/sub_administrative_area.ndJson"
 model_metadata_log_file = '/data/attachments/info.html'
 logging_path = '/data/attachments/execution_log.log'
+attachments_json_path = pathlib.Path("/", "data", "attachments.json")
 
 ###################
 # FUNCTIONS
@@ -219,7 +220,6 @@ os.makedirs(os.path.dirname(pathlib.Path(model_metadata_log_file)), exist_ok=Tru
 
 # Create attachments.json file which will contain a list of all attachments generated
 # Initially, the attachments is simply an empty list
-attachments_json_path = pathlib.Path("/", "data", "attachments.json")
 with open(attachments_json_path, 'w', newline='') as f:
   writer = json.dump(list(), f)
 
@@ -238,7 +238,7 @@ attachment = {
   "role": "feedback"}
 add_item_to_json_file_list(attachments_json_path, attachment)
 
-###################
+###############
 # SETUP LOGGING
 
 # Create log file including any parent folders (if they don't already exist)
@@ -348,7 +348,7 @@ try:
 
 except:
   logging.error("samples.ndjson file does not exist.")
-  model_log_html("<h2>ERROR", "h2")
+  model_log_html("ERROR", "h4")
   model_log_html("ERROR: Samples (sample.ndjson) file not found. Sample data are required to run this model. Execution halted.")
   sys.exit(1)
 
