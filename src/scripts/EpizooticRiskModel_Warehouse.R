@@ -28,13 +28,20 @@ library(tidyverse) # Version 4.4.0
 # Reusable Functions
 
 add_item_to_json_array <- function(file_path, new_item) {
-    # Adds a string representing a JavaScript Object
-    # to a JSON file containing an array. The existence of
-    # the file and a list in that file is assumed.
+    # This is a bespoke function that adds a string representing a JavaScript
+    # Object to the attachments.json file containing an array listing the model
+    # outputs. Although this function has error handling for a missing file and
+    # improperly formed file, the existence of the file and a list enclosed in
+    # brackets in that file are expected.
 
     # Check if the file exists
     if (!file.exists(file_path)) {
-        stop(paste0("Error: File '", file_path, "' not found."))
+        #write to error log and exit script with an error
+        line = "<h4>ERROR</h4>"
+        write(line,file=model_log_filepath,append=TRUE)
+        line = paste0("<h4>ERROR</h4><p>Error: File '", file_path, "' not found.</p>")
+        write(line,file=model_log_filepath,append=TRUE)
+        quit(status=1)
     }
 
     # Read the file content
@@ -42,7 +49,9 @@ add_item_to_json_array <- function(file_path, new_item) {
 
     # Check if the file is empty
     if (nchar(file_content) == 0) {
-        stop("Error: The JSON file is empty.")
+        line = paste0("<h4>ERROR</h4><p>Error: File '", file_path, "' is empty</p>")
+        write(line,file=model_log_filepath,append=TRUE)
+        quit(status=1)
     }
 
     # Remove the last closing bracket
