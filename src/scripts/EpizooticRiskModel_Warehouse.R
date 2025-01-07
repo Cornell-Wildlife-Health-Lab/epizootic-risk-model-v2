@@ -5,9 +5,10 @@
 # AUTHOR: Georgianna Silveira
 # ERROR HANDLING: Brenda Hanley
 # MODEL LOGGING: Brenda Hanley
-# QAQC: Brenda Hanley
+# WAREHOUSE INTEGRATION: Nick Hollingshead
+# QAQC: Brenda Hanley and Nick Hollingshead
 #
-# DATE: August 2024
+# DATE: 2025
 # Location: Cornell Wildlife Health Laboratory
 # License: MIT
 #
@@ -25,59 +26,53 @@
 # Load packages.
 library(tidyverse) # Version 4.4.0
 
-# Reusable Functions
+# Reusable Functions.
 
-add_item_to_json_array <- function(file_path, new_item) {
+add_item_to_json_array=function(file_path, new_item) {
     # This is a bespoke function that adds a string representing a JavaScript
     # Object to the attachments.json file containing an array listing the model
     # outputs. Although this function has error handling for a missing file and
     # improperly formed file, the existence of the file and a list enclosed in
     # brackets in that file are expected.
 
-    # Check if the file exists
+    # Check if the file exists.
     if (!file.exists(file_path)) {
-        #write to error log and exit script with an error
-        line = "<h4>ERROR</h4>"
+        # Write to error log and exit script with an error.
+        line=paste0("<h4>ERROR</h4><p>Error: File '", file_path, "' not found.</p>")
         write(line,file=model_log_filepath,append=TRUE)
-        line = paste0("<h4>ERROR</h4><p>Error: File '", file_path, "' not found.</p>")
-        write(line,file=model_log_filepath,append=TRUE)
-        quit(status=1)
-    }
+        quit(status=1)}
 
-    # Read the file content
-    file_content <- readChar(file_path, file.info(file_path)$size)
+    # Read the file content.
+    file_content=readChar(file_path, file.info(file_path)$size)
 
-    # Check if the file is empty
+    # Check if the file is empty.
     if (nchar(file_content) == 0) {
-        line = paste0("<h4>ERROR</h4><p>Error: File '", file_path, "' is empty</p>")
+        line=paste0("<h4>ERROR</h4><p>Error: File '", file_path, "' is empty.</p>")
         write(line,file=model_log_filepath,append=TRUE)
-        quit(status=1)
-    }
+        quit(status=1)}
 
-    # Remove the last closing bracket
-    file_content <- substr(file_content, 1, nchar(file_content) - 1)
+    # Remove the last closing bracket.
+    file_content=substr(file_content, 1, nchar(file_content) - 1)
 
-    # Create a function for adding double quotes around text
-    double_quote <- function(x) {
-        paste0('"', x, '"')
-    }
+    # Create a function for adding double quotes around text.
+    double_quote=function(x) {paste0('"', x, '"')}
 
-    # Create the new item as a JSON string using shQuote with double_quote
-    new_item_json <- paste0(
+    # Create the new item as a JSON string using shQuote with double_quote.
+    new_item_json=paste0(
         "{",
         paste(
             sapply(names(new_item), double_quote),
             sapply(as.character(new_item), double_quote),
-            sep = ":", collapse = ","
+            sep=":", collapse=","
         ),
         "}"
     )
 
     # Add comma, new item, and closing bracket to the file content
-    file_content <- paste0(file_content, ",", new_item_json, "]")
+    file_content=paste0(file_content, ",", new_item_json, "]")
 
     # Write the updated data back to the file
-    writeLines(file_content, file_path, sep = "")
+    writeLines(file_content, file_path, sep="")
 }
 
 
@@ -92,25 +87,25 @@ add_item_to_json_array <- function(file_path, new_item) {
     model_log_filepath=file.path("", "data", "attachments", "info.html")
 
 # Continue the log started with the Python script. 
-    line = '<h3>Model Execution</h3>'
+    line='<h3>Model Execution</h3>'
     write(line,file=model_log_filepath,append=TRUE)
 
 # Read in the (Required) Parameters file. 
-    params_filepath = file.path("", "data", "params.csv")
+    params_filepath=file.path("", "data", "params.csv")
     params=readr::read_csv(params_filepath)
     # Note: The params.csv has to exist b/c Python generated it and b/c model 
     # has to create it. Therefore, this error handling is in the python code and 
     # this R script will not run if it does not exist. 
 
 # Read in the (Required) Subadmin file. 
-    subadmin_filepath = file.path("", "data", "sub_administrative_area.csv")
+    subadmin_filepath=file.path("", "data", "sub_administrative_area.csv")
     subadmin=readr::read_csv(subadmin_filepath) 
     # Note: The sub_administrative_area.csv has to exist b/c Python generated it 
     # and b/c model has to create it. Therefore, this error handling is in the 
     # python code and this R script will not run if it does not exist. 
     
 # Read in (Required) Samples file. 
-    sample_filepath = file.path("", "data", "sample.csv")
+    sample_filepath=file.path("", "data", "sample.csv")
     sample=readr::read_csv(sample_filepath) 
     # Note: The sub_administrative_area.csv has to exist b/c Python generated 
     # it and b/c model has to create it. Therefore, this error handling is in 
@@ -124,8 +119,7 @@ add_item_to_json_array <- function(file_path, new_item) {
     # Get the area of each subadmin in square kilometers.
     Area=(as.numeric(unique(subadmin$aland)))/(1000*1000)
       
-    # Append the Area to the SubAdmin_Standard to create 
-    # the 'standard' area data frame.
+    # Append the Area to the SubAdmin_Standard to create the 'standard' area data frame.
     SubAdmin_Standard_Area=as.data.frame(cbind(SubAdmin_Standard,Area))
 
     # Import and Format the Demographic Data. 
@@ -160,13 +154,13 @@ add_item_to_json_array <- function(file_path, new_item) {
                         # If some samples were we retained. 
                         if(CleanDim!=OrigDim){
                         # Print a message saying how many samples you started with.
-                        line=paste("<p>The sample data set started with", OrigDim, "samples.<br>")
+                        line=paste("<p>The sample data set started with ", OrigDim, " samples.</p>")
                         write(line,file=model_log_filepath,append=TRUE)
                         # Print a message saying how many samples were removed.
-                        line=paste("However,", OrigDim-CleanDim, "samples were removed due to missing sub administration area.<br>")
+                        line=paste("<p>However, ", OrigDim-CleanDim, " samples were removed due to missing sub administration area.</p>")
                         write(line,file=model_log_filepath,append=TRUE)                          
                         # Print a message saying how many samples are remaining in model. 
-                        line=paste("Thus, the model will now use the", CleanDim, "complete samples.</p>")
+                        line=paste("<p>Thus, the model will now use the ", CleanDim, " complete samples.</p>")
                         write(line,file=model_log_filepath,append=TRUE)                          
                         } # End if some samples were removed.
                     
@@ -175,10 +169,13 @@ add_item_to_json_array <- function(file_path, new_item) {
           # If all samples were removed during cleaning.
           if (CleanDim==0){
           # Print error message to log file.
-          line="<p>We're sorry. The data does not contain at least one record with a known sub adminstrative area, which is a requirement of this model. Please go back to the Warehouse and select a different set of samples to analyze.</p>"
+          line="<p>We're sorry. The data does not contain at least one record 
+		  with a known sub adminstrative area, which is a requirement 
+		  of this model. Please go back to the Warehouse and select 
+		  a different set of samples to analyze.</p>"
           write(line,file=model_log_filepath,append=TRUE) 
           # Kill the code.  
-          quit(status = 70)
+          quit(status=70)
           } # End if all samples were removed.
         
 # At this point in the code, there has to be data in 'sample_clean' 
@@ -199,20 +196,22 @@ add_item_to_json_array <- function(file_path, new_item) {
           # Count number of positive samples per subadmin.
           Load=as.data.frame(positives2%>%group_by(SubAdminID)%>%summarize(Load=n()))
           # Join load vector to the list of all subadmin. 
-          # By doing a left join, subadmin with no CWD load = NA.
+          # By doing a left join, subadmin with no CWD load=NA.
           SubAdmin_Standard_Load=left_join(SubAdmin_Standard_Area,Load,by="SubAdminID")
-          # Change subadmin with NA to Load = 0.
+          # Change subadmin with NA to Load=0.
           SubAdmin_Standard_Load$Load=replace_na(SubAdmin_Standard_Load$Load,0)
           } # End if positive tests.
           
           # If there does not exist positive tests.
           if(PosDim==0){
-          # Create a Load of length subadmin, where all subadmin have Load = 0.
+          # Create a Load of length subadmin, where all subadmin have Load=0.
           Load=rep(0,times=nrow(SubAdmin_Standard_Area))
           # Bind the load vector to the list of all subadmin.
           SubAdmin_Standard_Load=cbind(SubAdmin_Standard_Area,Load)
           # Print a message that there were no positive samples.
-          line="<p>No positive CWD tests were reported in this data set, so the environmental contamination value has been set to zero for all sub administrative areas.</p>"
+          line="<p>No positive CWD tests were reported in this 
+		  data set, so the environmental contamination 
+		  value has been set to zero for all sub administrative areas.</p>"
           write(line,file=model_log_filepath,append=TRUE)                               
           } # End if no positive tests.
             
@@ -229,7 +228,7 @@ add_item_to_json_array <- function(file_path, new_item) {
   # demographic factor will be pulled from the parameters file.
 
   # Create an import function to see whether optional demographic data exists. 
-  importdemography <- function(x) {
+  importdemography=function(x) {
     # Create tryCatch function that attempts import a demographic file.
     # If a file does not exist, this function returns a null value.
     # If the file does exist, it returns the file.
@@ -427,7 +426,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,gammaE)
       rm(gammaE)
       # Log the message.
-      line='<p>Data depicting transmission between subclinical hosts and new hosts does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data depicting transmission between subclinical hosts and 
+	new hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
 
 # GammaI.
@@ -437,7 +437,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,gammaI)
       rm(gammaI)
       # Log the message.
-      line='<p>Data depicting transmission between clinical hosts and new hosts does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data depicting transmission between clinical hosts and new 
+	hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # Sigma.    
@@ -447,7 +448,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,sigma)
       rm(sigma)
       # Log the message.
-      line='<p>Data depicting transmission between the environment and new hosts does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data depicting transmission between the environment and 
+	new hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE)   
       
 # Omega.   
@@ -457,7 +459,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,omega)
       rm(omega)
       # Log the message.
-      line='<p>Data on disease progression from disease-free hosts to subclinical hosts does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data on disease progression from disease-free hosts to 
+	subclinical hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # Epsilon.    
@@ -467,7 +470,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,epsilon)
       rm(epsilon)
       # Log the message.
-      line='<p>Data on disease progression from subclinical to clinical hosts does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data on disease progression from subclinical to clinical 
+	hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # Alpha.
@@ -477,7 +481,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,alpha)
       rm(alpha)
       # Log the message.
-      line='<p>Data on disease progression from clinical host to CWD mortality hosts does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data on disease progression from clinical host to CWD mortality 
+	hosts does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # q.   
@@ -487,7 +492,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,q)
       rm(q)
       # Log the message.
-      line='<p>Data on transmission (contact) type does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data on transmission (contact) type does not exist. The 
+	model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # Eta.   
@@ -497,7 +503,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,eta)
       rm(eta)
       # Log the message.
-      line='<p>Data on the rate of prion removal from the environment does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data on the rate of prion removal from the environment 
+	does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # PhiE.  
@@ -507,7 +514,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,phiE)
       rm(phiE)
       # Log the message.
-      line='<p>Data on the prion deposition rate of subclinical carcasses does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data on the prion deposition rate of subclinical carcasses 
+	does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # PhiI.    
@@ -517,7 +525,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,phiI)
       rm(phiI)
       # Log the message.
-      line='<p>Data on the prion deposition rate of clinical carcasses does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data on the prion deposition rate of clinical carcasses does 
+	not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # PhiX.   
@@ -527,7 +536,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,phiX)
       rm(phiX)
       # Log the message.
-      line='<p>Data on the prion deposition rates of hosts that died from CWD does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data on the prion deposition rates of hosts that died from 
+	CWD does not exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # ThetaE.
@@ -537,7 +547,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,thetaE)
       rm(thetaE)
       # Log the message.
-      line='<p>Data on the shedding rate of subclinical hosts does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data on the shedding rate of subclinical hosts does not 
+	exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
       
 # ThetaI.
@@ -547,7 +558,8 @@ ModelMatrix=SubAdmin_Standard_Load
       ModelMatrix=cbind(ModelMatrix,thetaI)
       rm(thetaI)
       # Log the message.
-      line='<p>Data on the shedding rate of clinical hosts does not exist. The model will use user-input values instead.</p>'
+      line='<p>Data on the shedding rate of clinical hosts does not 
+	exist. The model will use user-input values instead.</p>'
       write(line,file=model_log_filepath,append=TRUE) 
 
 # Notes at this point in the script: .
@@ -557,15 +569,16 @@ ModelMatrix=SubAdmin_Standard_Load
 # Print the Model Matrix.
       setwd("/data/attachments")
       # Write the Model Matrix to the attachments working directory.
-      write.csv(ModelMatrix, "EpizooticRiskModelInput.csv", row.names = FALSE)
+      write.csv(ModelMatrix, "EpizooticRiskModelInput.csv", row.names=FALSE)
+      
       # Modify the attachments.json file to include the Model Matrix
       setwd("/data")
-      # Define the new item
-      attachment_item <- list(
-            filename = "EpizooticRiskModelInput.csv", 
-            content_type = "text/csv", 
-            role = "downloadable"
-            )
+      
+      # Define the new item.
+      attachment_item=list(
+            filename="EpizooticRiskModelInput.csv", 
+            content_type="text/csv", 
+            role="downloadable")
       add_item_to_json_array("attachments.json", attachment_item)
 
 # Ensure that the ModelMatrix does not have lurking NAs from randomly missing data
@@ -580,7 +593,10 @@ ModelMatrix=SubAdmin_Standard_Load
     	line='<h4>Complete Cases</h4>'
     	write(line,file=model_log_filepath,append=TRUE)
 	Diff=ModelMatrixDim-ModelMatrixCompleteDim
-	line=paste("<p>This model requires each sub-administrative area to have values for all inputs.", Diff," sub-administrative areas were removed from this analysis due to missing data within one ore more required fields.</p>")
+	line=paste("<p>This model requires each sub-administrative area to 
+		   have values for all inputs. ", Diff," sub-administrative 
+		   areas were removed from this analysis due to missing 
+		   data within one ore more required fields.</p>")
   	write(line,file=model_log_filepath,append=TRUE) 
   
   # Note. At this point in the code, the files exist and data exists in the files. Otherwise the code will have been terminated. 
@@ -620,9 +636,8 @@ ModelMatrix=SubAdmin_Standard_Load
   
   # Initialize OutputMatrix. 
   OutputMatrix=as.data.frame(cbind(
-      SubAdminID = ModelMatrixComplete$SubAdminID,
-      SubAdminName = ModelMatrixComplete$SubAdminName)
-  )
+      SubAdminID=ModelMatrixComplete$SubAdminID,
+      SubAdminName=ModelMatrixComplete$SubAdminName))
   
   # Calculate the Population Growth Rate. 
   # Initialize empty vector to store calculations.
@@ -638,7 +653,8 @@ ModelMatrix=SubAdmin_Standard_Load
     M=rbind(top,middle,bottom)
     # Calculate growth rate from matrix.
     PopulationGrowthRate[i]=round(eigen(M)$values[1],digits=3)
-  }
+  } # End growth rate for each subadmin area.
+		
   # Append PopulationGrowthRate onto Output Matrix.
   OutputMatrix=cbind(OutputMatrix,PopulationGrowthRate)
   
@@ -647,14 +663,17 @@ ModelMatrix=SubAdmin_Standard_Load
   a_numerator=GAMMAE*FECUNDITY*OMEGA
   a_denominator=MUS*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)
   ratio_a=a_numerator/a_denominator
+		
   # Second term.
   b_numerator=GAMMAI*FECUNDITY*OMEGA*EPSILON
   b_denominator=MUS*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   ratio_b=b_numerator/b_denominator
+		
   # Third term.
   c_numerator=SIGMA*FECUNDITY*OMEGA*(THETAE+PHIE*MUED)
   c_denominator=MUS*ETA*(MUL+OMEGA)*(MUEW+MUED+EPSILON)
   ratio_c=c_numerator/c_denominator
+		
   # Fourth term.
   d_numerator=SIGMA*FECUNDITY*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
   d_denominator=MUS*ETA*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
@@ -677,31 +696,44 @@ ModelMatrix=SubAdmin_Standard_Load
   E_N_denominator=MUS*(N^(Q+1))*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_N=E_N_numerator/E_N_denominator
   
-  E_FECUNDITY_numerator=(FECUNDITY/EpizooticPotential)*ETA*GAMMAE*OMEGA*(MUIW+MUID+ALPHA)+ETA*GAMMAI*OMEGA*EPSILON+N^Q*SIGMA*OMEGA*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)+N^Q*SIGMA*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
+  E_FECUNDITY_numerator=(FECUNDITY/EpizooticPotential)*ETA*GAMMAE*OMEGA*(MUIW+MUID+ALPHA)+
+		ETA*GAMMAI*OMEGA*EPSILON+N^Q*SIGMA*OMEGA*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)+
+		N^Q*SIGMA*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_FECUNDITY_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_f=E_FECUNDITY_numerator/E_FECUNDITY_denominator
   
-  E_MUS_numerator=(MUS/EpizooticPotential)*-1*GAMMAE*FECUNDITY*OMEGA*(MUIW+MUID+ALPHA)-ETA*GAMMAI*FECUNDITY*OMEGA*EPSILON-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
+  E_MUS_numerator=(MUS/EpizooticPotential)*-1*GAMMAE*FECUNDITY*OMEGA*(MUIW+MUID+ALPHA)-
+		ETA*GAMMAI*FECUNDITY*OMEGA*EPSILON-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*
+		(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_MUS_denominator=MUS^2*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_muS=E_MUS_numerator/E_MUS_denominator
   
-  E_MUL_numerator=(MUL/EpizooticPotential)*-1*GAMMAE*FECUNDITY*OMEGA*ETA*(MUIW+MUID+ALPHA)-GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
+  E_MUL_numerator=(MUL/EpizooticPotential)*-1*GAMMAE*FECUNDITY*OMEGA*ETA*(MUIW+MUID+ALPHA)-
+		GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*
+		(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_MUL_denominator=MUS*ETA*N^Q*(MUL+OMEGA)^2*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_muL=E_MUL_numerator/E_MUL_denominator
   
-  E_MUED_numerator=(MUED/EpizooticPotential)*-1*GAMMAE*FECUNDITY*OMEGA*ETA*(MUIW+MUID+ALPHA)-GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA+SIGMA*FECUNDITY*OMEGA*N^Q*(PHIE*(MUEW+MUED+EPSILON)-THETAE-PHIE*MUED)*(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
+  E_MUED_numerator=(MUED/EpizooticPotential)*-1*GAMMAE*FECUNDITY*OMEGA*ETA*(MUIW+MUID+ALPHA)-
+		GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA+SIGMA*FECUNDITY*OMEGA*N^Q*(PHIE*(MUEW+MUED+EPSILON)-
+		THETAE-PHIE*MUED)*(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_MUED_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)^2*(MUIW+MUID+ALPHA)
   E_muEd=E_MUED_numerator/E_MUED_denominator
   
-  E_MUEW_numerator=(MUEW/EpizooticPotential)*-1*ETA*GAMMAE*FECUNDITY*OMEGA*(MUIW+MUID+ALPHA)-ETA*GAMMAI*FECUNDITY*OMEGA*EPSILON-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
+  E_MUEW_numerator=(MUEW/EpizooticPotential)*-1*ETA*GAMMAE*FECUNDITY*OMEGA*(MUIW+MUID+ALPHA)-ETA*GAMMAI*
+		FECUNDITY*OMEGA*EPSILON-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)-
+		SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_MUEW_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)^2*(MUIW+MUID+ALPHA)
   E_muEw=E_MUEW_numerator/E_MUEW_denominator
   
-  E_MUID_numerator=(MUID/EpizooticPotential)*-1*GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*OMEGA*EPSILON*THETAI*N^Q+SIGMA*FECUNDITY*OMEGA*EPSILON*PHII*N^Q*(MUIW+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*PHIX*ALPHA*N^Q
+  E_MUID_numerator=(MUID/EpizooticPotential)*-1*GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*OMEGA*
+		EPSILON*THETAI*N^Q+SIGMA*FECUNDITY*OMEGA*EPSILON*PHII*N^Q*(MUIW+ALPHA)-SIGMA*FECUNDITY*
+		OMEGA*EPSILON*PHIX*ALPHA*N^Q
   E_MUID_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)^2
   E_muId=E_MUID_numerator/E_MUID_denominator
   
-  E_MUIW_numerator=(MUIW/EpizooticPotential)*-1*GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
+  E_MUIW_numerator=(MUIW/EpizooticPotential)*-1*GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*OMEGA*
+		EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_MUIW_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)^2
   E_muIw=E_MUIW_numerator/E_MUIW_denominator
   
@@ -713,19 +745,26 @@ ModelMatrix=SubAdmin_Standard_Load
   E_GAMMAI_denominator=MUS*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_gammaI=E_GAMMAI_numerator/E_GAMMAI_denominator
   
-  E_SIGMA_numerator=(SIGMA/EpizooticPotential)*FECUNDITY*OMEGA*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)+FECUNDITY*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
+  E_SIGMA_numerator=(SIGMA/EpizooticPotential)*FECUNDITY*OMEGA*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)+
+		FECUNDITY*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_SIGMA_denominator=MUS*ETA*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_sigma=E_SIGMA_numerator/E_SIGMA_denominator
   
-  E_OMEGA_numerator=(OMEGA/EpizooticPotential)*FECUNDITY*MUL*(GAMMAE*ETA*(MUIW+MUID+ALPHA)+GAMMAI*EPSILON*ETA+SIGMA*N^Q*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)+SIGMA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA))
+  E_OMEGA_numerator=(OMEGA/EpizooticPotential)*FECUNDITY*MUL*(GAMMAE*ETA*(MUIW+MUID+ALPHA)+GAMMAI*
+		EPSILON*ETA+SIGMA*N^Q*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)+SIGMA*EPSILON*N^Q*
+		(THETAI+PHII*MUID+PHIX*ALPHA))
   E_OMEGA_denominator=MUS*ETA*N^Q*(MUL+OMEGA)^2*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_omega=E_OMEGA_numerator/E_OMEGA_denominator
   
-  E_EPSILON_numerator=(EPSILON/EpizooticPotential)*-1*GAMMAE*FECUNDITY*OMEGA*ETA*(MUIW+MUID+ALPHA)+GAMMAI*FECUNDITY*OMEGA*ETA*(MUEW+MUED)-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)+SIGMA*FECUNDITY*OMEGA*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)*(MUEW+MUED)
+  E_EPSILON_numerator=(EPSILON/EpizooticPotential)*-1*GAMMAE*FECUNDITY*OMEGA*ETA*(MUIW+MUID+ALPHA)+
+		GAMMAI*FECUNDITY*OMEGA*ETA*(MUEW+MUED)-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*
+		(MUIW+MUID+ALPHA)+SIGMA*FECUNDITY*OMEGA*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)*(MUEW+MUED)
   E_EPSILON_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)^2*(MUIW+MUID+ALPHA)
   E_epsilon=E_EPSILON_numerator/E_EPSILON_denominator
   
-  E_ALPHA_numerator=(ALPHA/EpizooticPotential)*-1*GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*OMEGA*EPSILON*THETAI*N^Q-SIGMA*FECUNDITY*OMEGA*EPSILON*PHII*MUID*N^Q+SIGMA*FECUNDITY*OMEGA*EPSILON*PHIX*N^Q*(MUIW+MUID)
+  E_ALPHA_numerator=(ALPHA/EpizooticPotential)*-1*GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*
+		OMEGA*EPSILON*THETAI*N^Q-SIGMA*FECUNDITY*OMEGA*EPSILON*PHII*MUID*N^Q+SIGMA*FECUNDITY*
+		OMEGA*EPSILON*PHIX*N^Q*(MUIW+MUID)
   E_ALPHA_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)^2
   E_alpha=E_ALPHA_numerator/E_ALPHA_denominator
   
@@ -749,19 +788,24 @@ ModelMatrix=SubAdmin_Standard_Load
   E_PHIX_denominator=MUS*ETA*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_phiX=E_PHIX_numerator/E_PHIX_denominator
   
-  E_ETA_numerator=(ETA/EpizooticPotential)*-1*SIGMA*FECUNDITY*OMEGA*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
+  E_ETA_numerator=(ETA/EpizooticPotential)*-1*SIGMA*FECUNDITY*OMEGA*(THETAE+PHIE*MUED)*
+		(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_ETA_denominator=MUS*ETA^2*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_eta=E_ETA_numerator/E_ETA_denominator
   
-  E_Q_numerator=(Q/EpizooticPotential)*-1*log(N)*FECUNDITY*OMEGA*(GAMMAE*(MUIW+MUID+ALPHA)+GAMMAI*EPSILON)
+  E_Q_numerator=(Q/EpizooticPotential)*-1*log(N)*FECUNDITY*OMEGA*(GAMMAE*(MUIW+MUID+ALPHA)+
+		GAMMAI*EPSILON)
   E_Q_denominator=MUS*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_q=E_Q_numerator/E_Q_denominator
   
   # Put all into one data frame. 
-  elast=data.frame(E_N,E_f,E_muS,E_muL,E_muEd,E_muEw,E_muId,E_muIw,E_gammaE,E_gammaI,E_sigma,E_omega,E_epsilon,E_alpha,E_thetaE,E_thetaI,E_phiE,E_phiI,E_phiX,E_eta,E_q)
+  elast=data.frame(E_N,E_f,E_muS,E_muL,E_muEd,E_muEw,E_muId,E_muIw,E_gammaE,E_gammaI,
+		   E_sigma,E_omega,E_epsilon,E_alpha,E_thetaE,E_thetaI,E_phiE,E_phiI,E_phiX,E_eta,E_q)
   
   # Calculate elasticity denominator. 
-  sum=abs(E_N)+abs(E_f)+abs(E_muS)+abs(E_muL)+abs(E_muEd)+abs(E_muEw)+abs(E_muId)+abs(E_muIw)+abs(E_gammaE)+abs(E_gammaI)+abs(E_sigma)+abs(E_omega)+abs(E_epsilon)+abs(E_alpha)+abs(E_thetaE)+abs(E_thetaI)+abs(E_phiE)+abs(E_phiI)+abs(E_phiX)+abs(E_eta)+abs(E_q)
+  sum=abs(E_N)+abs(E_f)+abs(E_muS)+abs(E_muL)+abs(E_muEd)+abs(E_muEw)+abs(E_muId)+abs(E_muIw)+
+		abs(E_gammaE)+abs(E_gammaI)+abs(E_sigma)+abs(E_omega)+abs(E_epsilon)+abs(E_alpha)+
+		abs(E_thetaE)+abs(E_thetaI)+abs(E_phiE)+abs(E_phiI)+abs(E_phiX)+abs(E_eta)+abs(E_q)
   
   # Calculate final elasticity. 
   InfluencesonEpizooticPotential=round(abs(elast)/sum,digits=3)
@@ -771,19 +815,18 @@ ModelMatrix=SubAdmin_Standard_Load
   
   # Write the Output Matrix to the attachments working directory.
   setwd("/data/attachments")
-  write.csv(OutputMatrix, "EpizooticRiskModelOutput.csv",  row.names = FALSE)
-  # Modify the attachments.json file to include the Model Matrix
+  write.csv(OutputMatrix, "EpizooticRiskModelOutput.csv",  row.names=FALSE)
+		
+  # Modify the attachments.json file to include the Model Matrix.
   setwd("/data")
-  # Define the new item
-  attachment_item <- list(
-      filename = "EpizooticRiskModelOutput.csv", 
-      content_type = "text/csv", 
-      role = "downloadable"
-      )
+		
+  # Define the new item.
+  attachment_item=list(
+      filename="EpizooticRiskModelOutput.csv", 
+      content_type="text/csv", 
+      role="downloadable")
   add_item_to_json_array("attachments.json", attachment_item)
   
-
-
 	} # End if subadmin area removed. 
 
 	# If all the subadmin areas are removed.
@@ -791,24 +834,27 @@ ModelMatrix=SubAdmin_Standard_Load
 	# Tell the user that insufficient data exists. 
     	line='<h4>Complete Cases</h4>'
     	write(line,file=model_log_filepath,append=TRUE)
-	line=paste("<p>This model requires each sub-administrative area to have values for all inputs. While you have some data, there does not exist a single sub-administrative area that contains all the required fields needed to run this model. Please return to the Warehouse and select a different set of data to analyze.</p>")
+	line=paste("<p>This model requires each sub-administrative area to have values for 
+		   all inputs. While you have some data, there does not exist a single 
+		   sub-administrative area that contains all the required fields 
+		   needed to run this model. Please return to the Warehouse and 
+		   select a different set of data to analyze.</p>")
 	write(line,file=model_log_filepath,append=TRUE) 
 	# Write a blank file back to the Warehouse. 
 	setwd("/data/attachments")
 	NULLS=as.data.frame(matrix(rep(NA,ModelMatrixDim*26),ModelMatrixDim,26,byrow=TRUE))
 	colnames(NULLS)=c("SubAdminID","SubAdminName","PopulationGrowthRate","EpizooticPotential","EpizooticPotentialRank","E_N",
 	               "E_f","E_muS","E_muL","E_muEd","E_muEw","E_muId","E_muIw","E_gammaE",
-	               "E_gammaI","E_sigma","E_omega","E_epsilon","E_alpha","E_thetaE","E_thetaI","E_phiE","E_phiI","E_phiX","E_eta","E_q")
-	write.csv(NULLS, "EpizooticRiskModelOutput.csv", row.names = FALSE)
-        # Modify the attachments.json file to include the Model Matrix
-      setwd("/data")
-      # Define the new item
-      attachment_item <- list(
-            filename = "EpizooticRiskModelOutput.csv", 
-            content_type = "text/csv", 
-            role = "downloadable"
-            )
+	               "E_gammaI","E_sigma","E_omega","E_epsilon","E_alpha","E_thetaE",
+			"E_thetaI","E_phiE","E_phiI","E_phiX","E_eta","E_q")
+	write.csv(NULLS, "EpizooticRiskModelOutput.csv", row.names=FALSE)
+      # Modify the attachments.json file to include the Model Matrix
+      setwd("/data")	
+      # Define the new item.
+      attachment_item=list(
+            filename="EpizooticRiskModelOutput.csv", 
+            content_type="text/csv", 
+            role="downloadable")
       add_item_to_json_array("attachments.json", attachment_item)
 	} # End if subadmin areas not removed. 
-
 
