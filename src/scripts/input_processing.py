@@ -17,7 +17,7 @@ Outputs:
   demography_fecundity.csv (optional)
   demography_harvest_mortality.csv (optional)
   natural_mortality.csv (optional)
-  info.txt
+  info.html
   execution_log.log
 Date Created: 2024-08-19
 Date Modified: 2024-08-19
@@ -46,8 +46,9 @@ demography_file_paths = [
   "/data/demography_natural_mortality.json"
   ]
 subadmins_filepath = "/data/sub_administrative_area.ndJson"
-model_metadata_log_file = '/data/attachments/info.txt'
+model_metadata_log_file = '/data/attachments/info.html'
 logging_path = '/data/attachments/execution_log.log'
+attachments_json_path = pathlib.Path("/", "data", "attachments.json")
 
 ###################
 # FUNCTIONS
@@ -59,8 +60,19 @@ def model_log(line='', filename=model_metadata_log_file):
     filename: The name of the file.
   """
   with open(filename, 'a') as f:
-    f.write(line + '\n')
+    f.write(line + '<br>' + '\n')
 
+def model_log_html(line='', html_element="p", filename=model_metadata_log_file):
+    """
+    Writes a single line to the model_metadata_log text file with specified HTML element.
+
+    Args:
+        line: The line to be written.
+        filename: The name of the file.
+        html_element: The HTML element tag to use (e.g., "h1", "h2", "p", "div").
+    """
+    with open(filename, 'a') as f:
+        f.write(f"<{html_element}>{line}</{html_element}>" + '\n') 
 
 def json_stringify(data, indent=3):
   """Custom formats a nested dictionary into a string with spaces for indentation.
@@ -86,6 +98,73 @@ def json_stringify(data, indent=3):
   return '\n'.join(format_helper(data, indent))
 
 
+def json_stringify_html(data, indent=3):
+  """Custom formats a nested dictionary into a string with spaces for indentation and html breaks.
+
+  Args:
+    data: The nested dictionary.
+    indent: The number of spaces for indentation.
+
+  Returns:
+    A formatted string.
+  """
+
+  def format_helper(data, level):
+    lines = []
+    for key, value in data.items():
+      if isinstance(value, dict):
+        lines.append(f"{(' ' * level)}{key}:<br>")
+        lines.extend(format_helper(value, level + indent))
+      else:
+        lines.append(f"{(' ' * level)}{key}: {value}<br>")
+    return lines
+
+  return '\n'.join(format_helper(data, indent))
+
+def dict_to_html_list(data, list_type='unordered'):
+  """
+  Converts a Python dictionary to an HTML string representing a list.
+
+  Args:
+    data: The input dictionary.
+    list_type: 'unordered' (default) or 'ordered' to specify the list type.
+
+  Returns:
+    An HTML string representing the dictionary.
+  """
+
+  def _dict_to_html_helper(data):
+    """Recursive helper function to handle nested dictionaries."""
+    html_str = ""
+    if list_type == 'unordered':
+      html_str += "<ul>"
+    elif list_type == 'ordered':
+      html_str += "<ol>"
+    else:
+      raise ValueError("Invalid list_type. Use 'unordered' or 'ordered'.")
+
+    for key, value in data.items():
+      html_str += f"<li>{key}: "
+      if isinstance(value, dict):
+        html_str += _dict_to_html_helper(value)
+      elif isinstance(value, list):
+        html_str += "<ul>"
+        for item in value:
+          html_str += f"<li>{item}</li>"
+        html_str += "</ul>"
+      else:
+        html_str += f"{value}"
+      html_str += "</li>"
+
+    if list_type == 'unordered':
+      html_str += "</ul>"
+    elif list_type == 'ordered':
+      html_str += "</ol>"
+
+    return html_str
+
+  return _dict_to_html_helper(data)
+
 def rename_key(dict_, old_key, new_key):
   """Renames a key in a dictionary.
 
@@ -97,8 +176,69 @@ def rename_key(dict_, old_key, new_key):
 
   if old_key in dict_:
     dict_[new_key] = dict_.pop(old_key)
-  
-###################
+
+def add_item_to_json_file_list(file_path, new_item):
+  """
+  Adds a new item to the list within a JSON file.
+
+  Args:
+    file_path: Path to the JSON file.
+    new_item: The item to be added to the list.
+
+  Raises:
+    FileNotFoundError: If the specified file does not exist.
+    json.JSONDecodeError: If the file content is not valid JSON.
+  """
+
+  try:
+    with open(file_path, 'r') as f:
+      data = json.load(f)
+
+    if isinstance(data, list):
+      data.append(new_item)
+    else:
+      raise ValueError("The JSON file does not contain a list.")
+
+    with open(file_path, 'w') as f:
+      json.dump(data, f, indent=2) 
+
+  except FileNotFoundError:
+    print(f"Error: File '{file_path}' not found.")
+    raise
+  except json.JSONDecodeError:
+    print(f"Error: Invalid JSON in '{file_path}'.")
+    raise
+  except ValueError as e:
+    print(f"Error: {e}")
+    raise
+
+######################
+# SETUP FILE STRUCTURE
+
+# Create the attachments directory structure recursively if it doesn't already exist.
+os.makedirs(os.path.dirname(pathlib.Path(model_metadata_log_file)), exist_ok=True)
+
+# Create attachments.json file which will contain a list of all attachments generated
+# Initially, the attachments is simply an empty list
+with open(attachments_json_path, 'w', newline='') as f:
+  writer = json.dump(list(), f)
+
+# Append execution log to attachments.json for developer feedback
+attachment = {
+  "filename": "execution_log.log", 
+  "content_type": "text/plain", 
+  "role": "downloadable"
+  }
+add_item_to_json_file_list(attachments_json_path, attachment)
+
+# append info log to the attachments.json for user feedback
+attachment = {
+  "filename": "info.html", 
+  "content_type": "text/html", 
+  "role": "feedback"}
+add_item_to_json_file_list(attachments_json_path, attachment)
+
+###############
 # SETUP LOGGING
 
 # Create log file including any parent folders (if they don't already exist)
@@ -117,12 +257,11 @@ sys.excepthook = handle_uncaught_exception
 
 ## Initiate model metadata log
 
-# Create the attachments directory structure recursively if it doesn't already exist.
-os.makedirs(os.path.dirname(pathlib.Path(model_metadata_log_file)), exist_ok=True)
 # Clear model log file contents if necessary.
 open(pathlib.Path(model_metadata_log_file), 'w').close()
-model_log("Model: Epizootic Risk Model")
-model_log('Date: ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' GMT')
+model_log_html("Model Execution Summary", "h3")
+model_log_html("Model: Epizootic Risk Model")
+model_log_html('Date: ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' GMT', "p")
 logging.info("Model: Epizootic Risk Model")
 logging.info('Date: ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' GMT')
 logging.info("This log records data for debugging purposes in the case of a model execution error.")
@@ -142,7 +281,8 @@ try:
 except:
   # The model cannot be executed without a params file. Exit with an error immediately.
   logging.error("params.json File does not exist.")
-  model_log("ERROR: Parameters (params.json) file not found. Execution halted.")
+  model_log_html("ERROR", "h4")
+  model_log_html("Parameters (params.json) file not found. Execution halted.", "p")
   sys.exit(1)
   
 # Get provider admin area
@@ -193,10 +333,9 @@ with open(pathlib.Path("/data/params.csv"), 'w', newline='') as f:
   writer.writerow(params)
 
 # Add parameter related content to the log
-model_log('Provider area: ' + provider_admin_area)
-model_log('User provided parameters:')
-model_log(json_stringify(params))
-
+model_log_html('Provider area: ' + provider_admin_area)
+model_log_html("Model Parameters", "h4")
+model_log_html(dict_to_html_list(params))
 
 #################
 # Process Samples
@@ -209,14 +348,13 @@ try:
 
 except:
   logging.error("samples.ndjson file does not exist.")
-  model_log("ERROR: Samples (sample.ndjson) file not found. Sample data are required to run this model. Execution halted.")
+  model_log_html("ERROR", "h4")
+  model_log_html("ERROR: Samples (sample.ndjson) file not found. Sample data are required to run this model. Execution halted.")
   sys.exit(1)
 
 # Log number of samples
-model_log()
-model_log('-------------------')
-model_log("Warehouse data provided to model:")
-model_log("Samples: " + str(len(sample_data)))
+model_log_html("Warehouse data provided to model", "h4")
+model_log_html("Samples: " + str(len(sample_data)))
 
 for sample_record in sample_data:
 
@@ -269,7 +407,8 @@ try:
 except:
   # The model cannot be executed without a sub_administrative areas file. Exit with an error immediately.
   logging.error("sub_administrative_area.json File does not exist.")
-  model_log("ERROR: Sub-administrative areas (sub_administrative_area.json) file not found. Execution halted.")
+  model_log_html("ERROR", "h4")
+  model_log_html("ERROR: Sub-administrative areas (sub_administrative_area.json) file not found. Execution halted.")
   sys.exit(1)
 
 for subadmin in subadmins:
@@ -320,7 +459,7 @@ with open(pathlib.Path("/data/sub_administrative_area.csv"), 'w', newline='') as
 # Demography files
 # Not required. Process them if they exist.
 
-model_log("Demographic data:")
+model_log_html("Demographic data:")
 
 demography_file_provided = False # Set a dummy variable to false. 
                                  # Change to true (below) if at least one exists.
@@ -336,7 +475,7 @@ for demographic_file_path in demography_file_paths:
       demographic_data = json.load(f)
 
     # Log demographic file
-    model_log('   ' + demographic_data["species"] + " " + demographic_data["metric"] + " " + demographic_data["season_year"])
+    model_log_html('   ' + demographic_data["species"] + " " + demographic_data["metric"] + " " + demographic_data["season_year"])
 
     # Create a list to hold the demographic data
     list_demographic_data = [{"sub_administrative_area_id": key, "value": value} for key, value in demographic_data['data'].items()]
@@ -364,4 +503,4 @@ for demographic_file_path in demography_file_paths:
     pass
 
 if demography_file_provided == False:
-  model_log("   None provided")
+  model_log_html("None provided")
