@@ -1,0 +1,1 @@
+This SOP4CWD repository contains the scripts used to run the Epizootic Risk Model in the CWD Data Warehouse. The Epizootic Risk model is based on Hanley et al. (2022; https://doi.org/10.1016/j.ecolmodel.2022.110054). Scripts are shared with an MIT license. 
