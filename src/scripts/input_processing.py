@@ -6,14 +6,14 @@ Description: Prepares data from the CWD Data Warehouse for the Epizootic
 Inputs: 
   sample.ndjson
   params.json
-  demography_deer_density.json (optional)
+  demography_density.json (optional)
   demography_fecundity.json (optional)
   demography_harvest_mortality.json (optional)
   natural_mortality.json (optional)
 Outputs: 
   samples.csv
   params.csv
-  demography_deer_density.csv (optional)
+  demography_density.csv (optional)
   demography_fecundity.csv (optional)
   demography_harvest_mortality.csv (optional)
   natural_mortality.csv (optional)
@@ -40,7 +40,7 @@ import datetime
 parameters_file = '/data/params.json'
 sample_file_path = "/data/sample.ndJson"
 demography_file_paths = [
-  "/data/demography_deer_density.json",
+  "/data/demography_density.json",
   "/data/demography_fecundity.json",
   "/data/demography_harvest_mortality.json",
   "/data/demography_natural_mortality.json"
@@ -295,22 +295,8 @@ if 'season_year' in params:
   params['season_year'] = ', '.join(params['season_year'])
 
 ### Adding and editing params to fit revised model
-### Section can be removed after corresponding Warehouse UI and data processing updates.
-if 'omega' not in params:
-  params['omega'] = 4
-if 'epsilon' not in params:
-  params['epsilon'] = 0.8
-if 'alpha' not in params:
-  params['alpha'] = 1
-if 'deer_density_value' in params: 
-  rename_key(params, 'deer_density_value', 'density_value')
-if 'transmission_via_exposed_deer' in params:
-  rename_key(params, 'transmission_via_exposed_deer', 'transmission_via_subclinical_deer')
-if 'transmission_via_infectious_deer' in params:
-  rename_key(params, 'transmission_via_infectious_deer', 'transmission_via_clinical_deer')
+
 # Rename for file references
-if "_demography_deer_density" in params:
-  rename_key(params, '_demography_deer_density', 'demography_density_id')
 if "_demography_density" in params:
   rename_key(params, '_demography_density', 'demography_density_id')
 if "_demography_fecundity" in params:
@@ -319,7 +305,6 @@ if "_demography_harvest_mortality" in params:
   rename_key(params, '_demography_harvest_mortality', 'demography_harvest_mortality_id')
 if "_demography_natural_mortality" in params:
   rename_key(params, '_demography_natural_mortality', 'demography_natural_mortality_id')
-###
   
 # Write revised parameters to a CSV file
 with open(pathlib.Path("/data/params.csv"), 'w', newline='') as f:
@@ -481,10 +466,6 @@ for demographic_file_path in demography_file_paths:
     list_demographic_data = [{"sub_administrative_area_id": key, "value": value} for key, value in demographic_data['data'].items()]
     
     demographic_file_name = pathlib.Path(demographic_file_path).stem
-    # TEMP for transition to new model version
-    if demographic_file_name == 'demography_deer_density':
-      demographic_file_name = 'demography_density'
-    # END TEMP
     
     logging.info(f"Demography file {demographic_file_name} loaded successfully")
     
