@@ -1,7 +1,7 @@
 # ______________________________________________________________________________
 #
 # EPIZOOTIC RISK MODEL
-# 
+#
 # AUTHOR: Georgianna Silveira
 # ERROR HANDLING: Brenda Hanley
 # MODEL LOGGING: Brenda Hanley
@@ -663,24 +663,44 @@ ModelMatrix=SubAdmin_Standard_Load
   a_numerator=GAMMAE*FECUNDITY*OMEGA
   a_denominator=MUS*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)
   ratio_a=a_numerator/a_denominator
+   # If the denominator is zero, then there are no live hosts, 
+   # which means there is no potential for this term. Thus, 
+   # remove division by zero and replace it with 0 potential
+   # for this first term. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it by 0.    
+   for (tt in 1:length(ratio_a)){if (is.infinite(ratio_a[tt])|is.nan(ratio_a[tt])){ratio_a[tt]=0}}
 		
   # Second term.
   b_numerator=GAMMAI*FECUNDITY*OMEGA*EPSILON
   b_denominator=MUS*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   ratio_b=b_numerator/b_denominator
+   # If the denominator is zero, then there are no live hosts, 
+   # which means there is no potential for this term. Thus, 
+   # remove division by zero and replace it with 0 potential
+   # for this second term. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it by 0.    
+   for (tt in 1:length(ratio_b)){if (is.infinite(ratio_b[tt])|is.nan(ratio_b[tt])){ratio_b[tt]=0}}
 		
   # Third term.
   c_numerator=SIGMA*FECUNDITY*OMEGA*(THETAE+PHIE*MUED)
   c_denominator=MUS*ETA*(MUL+OMEGA)*(MUEW+MUED+EPSILON)
   ratio_c=c_numerator/c_denominator
+   # Remove division by zero and replace it with 0 potential
+   # for this third term. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it by 0.    
+   for (tt in 1:length(ratio_c)){if (is.infinite(ratio_c[tt])|is.nan(ratio_c[tt])){ratio_c[tt]=0}}
 		
   # Fourth term.
   d_numerator=SIGMA*FECUNDITY*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
   d_denominator=MUS*ETA*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   ratio_d=d_numerator/d_denominator
+   # Remove division by zero and replace it with 0 potential
+   # for this fourth term. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it by 0.    
+   for (tt in 1:length(ratio_d)){if (is.infinite(ratio_d[tt])|is.nan(ratio_d[tt])){ratio_d[tt]=0}}
   
   # Add all four terms and round to three digits.
-  EpizooticPotential=round(ratio_a+ratio_b+ratio_c+ratio_d, digits=3)
+  EpizooticPotential=round(ratio_a+ratio_b+ratio_c+ratio_d, digits=10)
 
   # Append EpizooticPotential onto Output Matrix.
   OutputMatrix=cbind(OutputMatrix,EpizooticPotential)
@@ -692,123 +712,211 @@ ModelMatrix=SubAdmin_Standard_Load
   OutputMatrix=cbind(OutputMatrix,EpizooticPotentialRank)
   
   # Compute Influences on Epizootic Potential. 
+
   E_N_numerator=(N/EpizooticPotential)*-1*Q*FECUNDITY*OMEGA*(GAMMAE*(MUIW+MUID+ALPHA)-GAMMAI*EPSILON)
   E_N_denominator=MUS*(N^(Q+1))*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_N=E_N_numerator/E_N_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_N)){if (is.infinite(E_N[tt])|is.nan(E_N[tt])){E_N[tt]=0}}
   
+
   E_FECUNDITY_numerator=(FECUNDITY/EpizooticPotential)*ETA*GAMMAE*OMEGA*(MUIW+MUID+ALPHA)+
-		ETA*GAMMAI*OMEGA*EPSILON+N^Q*SIGMA*OMEGA*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)+
-		N^Q*SIGMA*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
+  ETA*GAMMAI*OMEGA*EPSILON+N^Q*SIGMA*OMEGA*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)+
+  N^Q*SIGMA*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_FECUNDITY_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_f=E_FECUNDITY_numerator/E_FECUNDITY_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_f)){if (is.infinite(E_f[tt])|is.nan(E_f[tt])){E_f[tt]=0}}
   
+
   E_MUS_numerator=(MUS/EpizooticPotential)*-1*GAMMAE*FECUNDITY*OMEGA*(MUIW+MUID+ALPHA)-
-		ETA*GAMMAI*FECUNDITY*OMEGA*EPSILON-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*
-		(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
+  ETA*GAMMAI*FECUNDITY*OMEGA*EPSILON-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*
+  (MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_MUS_denominator=MUS^2*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_muS=E_MUS_numerator/E_MUS_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_muS)){if (is.infinite(E_muS[tt])|is.nan(E_muS[tt])){E_muS[tt]=0}}
   
+
   E_MUL_numerator=(MUL/EpizooticPotential)*-1*GAMMAE*FECUNDITY*OMEGA*ETA*(MUIW+MUID+ALPHA)-
-		GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*
-		(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
+  GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*
+  (MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_MUL_denominator=MUS*ETA*N^Q*(MUL+OMEGA)^2*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_muL=E_MUL_numerator/E_MUL_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_muL)){if (is.infinite(E_muL[tt])|is.nan(E_muL[tt])){E_muL[tt]=0}}
   
+
   E_MUED_numerator=(MUED/EpizooticPotential)*-1*GAMMAE*FECUNDITY*OMEGA*ETA*(MUIW+MUID+ALPHA)-
-		GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA+SIGMA*FECUNDITY*OMEGA*N^Q*(PHIE*(MUEW+MUED+EPSILON)-
-		THETAE-PHIE*MUED)*(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
+  GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA+SIGMA*FECUNDITY*OMEGA*N^Q*(PHIE*(MUEW+MUED+EPSILON)-
+  THETAE-PHIE*MUED)*(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_MUED_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)^2*(MUIW+MUID+ALPHA)
   E_muEd=E_MUED_numerator/E_MUED_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_muEd)){if (is.infinite(E_muEd[tt])|is.nan(E_muEd[tt])){E_muEd[tt]=0}}
   
+
   E_MUEW_numerator=(MUEW/EpizooticPotential)*-1*ETA*GAMMAE*FECUNDITY*OMEGA*(MUIW+MUID+ALPHA)-ETA*GAMMAI*
-		FECUNDITY*OMEGA*EPSILON-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)-
-		SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
+  FECUNDITY*OMEGA*EPSILON-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)-
+  SIGMA*FECUNDITY*OMEGA*EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_MUEW_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)^2*(MUIW+MUID+ALPHA)
   E_muEw=E_MUEW_numerator/E_MUEW_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_muEw)){if (is.infinite(E_muEw[tt])|is.nan(E_muEw[tt])){E_muEw[tt]=0}}
   
+
   E_MUID_numerator=(MUID/EpizooticPotential)*-1*GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*OMEGA*
-		EPSILON*THETAI*N^Q+SIGMA*FECUNDITY*OMEGA*EPSILON*PHII*N^Q*(MUIW+ALPHA)-SIGMA*FECUNDITY*
-		OMEGA*EPSILON*PHIX*ALPHA*N^Q
+  EPSILON*THETAI*N^Q+SIGMA*FECUNDITY*OMEGA*EPSILON*PHII*N^Q*(MUIW+ALPHA)-SIGMA*FECUNDITY*
+  OMEGA*EPSILON*PHIX*ALPHA*N^Q
   E_MUID_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)^2
   E_muId=E_MUID_numerator/E_MUID_denominator
-  
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_muId)){if (is.infinite(E_muId[tt])|is.nan(E_muId[tt])){E_muId[tt]=0}}
+
+
   E_MUIW_numerator=(MUIW/EpizooticPotential)*-1*GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*OMEGA*
-		EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
+  EPSILON*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_MUIW_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)^2
   E_muIw=E_MUIW_numerator/E_MUIW_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_muIw)){if (is.infinite(E_muIw[tt])|is.nan(E_muIw[tt])){E_muIw[tt]=0}}
+
   
   E_GAMMAE_numerator=(GAMMAE/EpizooticPotential)*FECUNDITY*OMEGA
   E_GAMMAE_denominator=MUS*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)
   E_gammaE=E_GAMMAE_numerator/E_GAMMAE_denominator
-  
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_gammaE)){if (is.infinite(E_gammaE[tt])|is.nan(E_gammaE[tt])){E_gammaE[tt]=0}}
+
+
   E_GAMMAI_numerator=(GAMMAI/EpizooticPotential)*FECUNDITY*OMEGA*EPSILON
   E_GAMMAI_denominator=MUS*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_gammaI=E_GAMMAI_numerator/E_GAMMAI_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_gammaI)){if (is.infinite(E_gammaI[tt])|is.nan(E_gammaI[tt])){E_gammaI[tt]=0}}
   
+
   E_SIGMA_numerator=(SIGMA/EpizooticPotential)*FECUNDITY*OMEGA*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)+
-		FECUNDITY*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
+  FECUNDITY*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_SIGMA_denominator=MUS*ETA*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_sigma=E_SIGMA_numerator/E_SIGMA_denominator
-  
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_sigma)){if (is.infinite(E_sigma[tt])|is.nan(E_sigma[tt])){E_sigma[tt]=0}}
+
+
   E_OMEGA_numerator=(OMEGA/EpizooticPotential)*FECUNDITY*MUL*(GAMMAE*ETA*(MUIW+MUID+ALPHA)+GAMMAI*
-		EPSILON*ETA+SIGMA*N^Q*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)+SIGMA*EPSILON*N^Q*
-		(THETAI+PHII*MUID+PHIX*ALPHA))
+  EPSILON*ETA+SIGMA*N^Q*(THETAE+PHIE*MUED)*(MUIW+MUID+ALPHA)+SIGMA*EPSILON*N^Q*
+  (THETAI+PHII*MUID+PHIX*ALPHA))
   E_OMEGA_denominator=MUS*ETA*N^Q*(MUL+OMEGA)^2*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_omega=E_OMEGA_numerator/E_OMEGA_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_omega)){if (is.infinite(E_omega[tt])|is.nan(E_omega[tt])){E_omega[tt]=0}}
   
+
   E_EPSILON_numerator=(EPSILON/EpizooticPotential)*-1*GAMMAE*FECUNDITY*OMEGA*ETA*(MUIW+MUID+ALPHA)+
-		GAMMAI*FECUNDITY*OMEGA*ETA*(MUEW+MUED)-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*
-		(MUIW+MUID+ALPHA)+SIGMA*FECUNDITY*OMEGA*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)*(MUEW+MUED)
+  GAMMAI*FECUNDITY*OMEGA*ETA*(MUEW+MUED)-SIGMA*FECUNDITY*OMEGA*N^Q*(THETAE+PHIE*MUED)*
+  (MUIW+MUID+ALPHA)+SIGMA*FECUNDITY*OMEGA*N^Q*(THETAI+PHII*MUID+PHIX*ALPHA)*(MUEW+MUED)
   E_EPSILON_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)^2*(MUIW+MUID+ALPHA)
   E_epsilon=E_EPSILON_numerator/E_EPSILON_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_epsilon)){if (is.infinite(E_epsilon[tt])|is.nan(E_epsilon[tt])){E_epsilon[tt]=0}}
   
+
   E_ALPHA_numerator=(ALPHA/EpizooticPotential)*-1*GAMMAI*FECUNDITY*OMEGA*EPSILON*ETA-SIGMA*FECUNDITY*
-		OMEGA*EPSILON*THETAI*N^Q-SIGMA*FECUNDITY*OMEGA*EPSILON*PHII*MUID*N^Q+SIGMA*FECUNDITY*
-		OMEGA*EPSILON*PHIX*N^Q*(MUIW+MUID)
+  OMEGA*EPSILON*THETAI*N^Q-SIGMA*FECUNDITY*OMEGA*EPSILON*PHII*MUID*N^Q+SIGMA*FECUNDITY*
+  OMEGA*EPSILON*PHIX*N^Q*(MUIW+MUID)
   E_ALPHA_denominator=MUS*ETA*N^Q*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)^2
   E_alpha=E_ALPHA_numerator/E_ALPHA_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_alpha)){if (is.infinite(E_alpha[tt])|is.nan(E_alpha[tt])){E_alpha[tt]=0}}
   
   E_THETAE_numerator=(THETAE/EpizooticPotential)*SIGMA*FECUNDITY*OMEGA
   E_THETAE_denominator=MUS*ETA*(MUL+OMEGA)*(MUEW+MUED+EPSILON)
   E_thetaE=E_THETAE_numerator/E_THETAE_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_thetaE)){if (is.infinite(E_thetaE[tt])|is.nan(E_thetaE[tt])){E_thetaE[tt]=0}}
+
   
   E_THETAI_numerator=(THETAI/EpizooticPotential)*SIGMA*FECUNDITY*OMEGA*EPSILON
   E_THETAI_denominator=MUS*ETA*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_thetaI=E_THETAI_numerator/E_THETAI_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_thetaI)){if (is.infinite(E_thetaI[tt])|is.nan(E_thetaI[tt])){E_thetaI[tt]=0}}
+
   
   E_PHIE_numerator=(PHIE/EpizooticPotential)*SIGMA*FECUNDITY*OMEGA*MUED
   E_PHIE_denominator=MUS*ETA*(MUL+OMEGA)*(MUEW+MUED+EPSILON)
   E_phiE=E_PHIE_numerator/E_PHIE_denominator
-  
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_phiE)){if (is.infinite(E_phiE[tt])|is.nan(E_phiE[tt])){E_phiE[tt]=0}}
+
   E_PHII_numerator=(PHII/EpizooticPotential)*SIGMA*FECUNDITY*OMEGA*EPSILON*MUID
   E_PHII_denominator=MUS*ETA*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
-  E_phiI=E_PHII_numerator/E_PHII_denominator	
+  E_phiI=E_PHII_numerator/E_PHII_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_phiI)){if (is.infinite(E_phiI[tt])|is.nan(E_phiI[tt])){E_phiI[tt]=0}}	
   
+
   E_PHIX_numerator=(PHIX/EpizooticPotential)*SIGMA*FECUNDITY*OMEGA*EPSILON*ALPHA
   E_PHIX_denominator=MUS*ETA*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_phiX=E_PHIX_numerator/E_PHIX_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_phiX)){if (is.infinite(E_phiX[tt])|is.nan(E_phiX[tt])){E_phiX[tt]=0}}
+
   
   E_ETA_numerator=(ETA/EpizooticPotential)*-1*SIGMA*FECUNDITY*OMEGA*(THETAE+PHIE*MUED)*
-		(MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
+  (MUIW+MUID+ALPHA)-SIGMA*FECUNDITY*OMEGA*EPSILON*(THETAI+PHII*MUID+PHIX*ALPHA)
   E_ETA_denominator=MUS*ETA^2*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_eta=E_ETA_numerator/E_ETA_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_eta)){if (is.infinite(E_eta[tt])|is.nan(E_eta[tt])){E_eta[tt]=0}}
   
   E_Q_numerator=(Q/EpizooticPotential)*-1*log(N)*FECUNDITY*OMEGA*(GAMMAE*(MUIW+MUID+ALPHA)+
-		GAMMAI*EPSILON)
+  GAMMAI*EPSILON)
   E_Q_denominator=MUS*(MUL+OMEGA)*(MUEW+MUED+EPSILON)*(MUIW+MUID+ALPHA)
   E_q=E_Q_numerator/E_Q_denominator
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.    
+   for (tt in 1:length(E_q)){if (is.infinite(E_q[tt])|is.nan(E_q[tt])){E_q[tt]=0}}
   
   # Put all into one data frame. 
   elast=data.frame(E_N,E_f,E_muS,E_muL,E_muEd,E_muEw,E_muId,E_muIw,E_gammaE,E_gammaI,
-		   E_sigma,E_omega,E_epsilon,E_alpha,E_thetaE,E_thetaI,E_phiE,E_phiI,E_phiX,E_eta,E_q)
+  E_sigma,E_omega,E_epsilon,E_alpha,E_thetaE,E_thetaI,E_phiE,E_phiI,E_phiX,E_eta,E_q)
   
   # Calculate elasticity denominator. 
   sum=abs(E_N)+abs(E_f)+abs(E_muS)+abs(E_muL)+abs(E_muEd)+abs(E_muEw)+abs(E_muId)+abs(E_muIw)+
-		abs(E_gammaE)+abs(E_gammaI)+abs(E_sigma)+abs(E_omega)+abs(E_epsilon)+abs(E_alpha)+
-		abs(E_thetaE)+abs(E_thetaI)+abs(E_phiE)+abs(E_phiI)+abs(E_phiX)+abs(E_eta)+abs(E_q)
+  abs(E_gammaE)+abs(E_gammaI)+abs(E_sigma)+abs(E_omega)+abs(E_epsilon)+abs(E_alpha)+
+  abs(E_thetaE)+abs(E_thetaI)+abs(E_phiE)+abs(E_phiI)+abs(E_phiX)+abs(E_eta)+abs(E_q)
   
   # Calculate final elasticity. 
-  InfluencesonEpizooticPotential=round(abs(elast)/sum,digits=3)
+  InfluencesonEpizooticPotential=abs(elast)/sum
+   # Remove division by zero and replace it with 0. Also remove the case where both the 
+   # numerator and the denominator is zero, and replace it with 0.
+	DIM=dim(InfluencesonEpizooticPotential)
+	for (tt in 1:DIM[1]){
+	for (ttt in 1:DIM[2]){
+	if (is.infinite(InfluencesonEpizooticPotential[tt,ttt])|is.nan(InfluencesonEpizooticPotential[tt,ttt])){
+	InfluencesonEpizooticPotential[tt,ttt]=0}}} 
   
   # Append InfluencesonEpizooticPotential onto Output Matrix.
   OutputMatrix=cbind(OutputMatrix,InfluencesonEpizooticPotential)
